@@ -1,0 +1,1 @@
+# copilot-cli-deep-dive-workshop
