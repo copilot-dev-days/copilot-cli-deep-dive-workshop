@@ -1,0 +1,63 @@
+{
+    "name": "copilot-cli-deep-dive-workshop",
+    "image": "mcr.microsoft.com/devcontainers/python:3.11-bookworm",
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "configureZshAsDefaultShell": true,
+            "installOhMyZsh": true,
+            "installOhMyZshConfig": true
+        },
+        "ghcr.io/devcontainers/features/docker-outside-of-docker": {},
+        "ghcr.io/devcontainers/features/node": {
+            "version": "lts"
+        },
+        "ghcr.io/devcontainers/features/azure-cli:1": {},
+        "ghcr.io/jsburckhardt/devcontainer-features/uv:1": {
+            "shellautocompletion": true,
+            "version": "latest"
+        },
+        "ghcr.io/stuartleeks/dev-container-features/shell-history": {},
+        "ghcr.io/devcontainers/features/github-cli": {},
+        "ghcr.io/devcontainers/features/copilot-cli": {}
+    },
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "chat.agent.maxRequests": 2000,
+                "files.insertFinalNewline": true,
+                "files.trimTrailingWhitespace": true,
+                "editor.tabSize": 4,
+                // "python.defaultInterpreterPath": "/home/vscode/.venv/bin/python",
+                "files.autoSave": "onWindowChange",
+                "chat.customAgentInSubagent.enabled": true
+            },
+            "extensions": [
+                "GitHub.vscode-github-actions",
+                "ms-azuretools.azure-dev",
+                "ms-azuretools.vscode-bicep",
+                "ms-azuretools.vscode-docker",
+                "charliermarsh.ruff",
+                "exiasr.hadolint",
+                "kevinrose.vsc-python-indent",
+                "ms-python.python",
+                "njpwerner.autodocstring",
+                "redhat.vscode-yaml",
+                "shardulm94.trailing-spaces",
+                "tamasfe.even-better-toml",
+                "bierner.markdown-mermaid",
+                "eamodio.gitlens",
+                "DavidAnson.vscode-markdownlint",
+                "yzhang.markdown-all-in-one",
+                "marp-team.marp-vscode"
+            ]
+        }
+    },
+    "postCreateCommand": "bash ./.devcontainer/post-create.sh",
+    "remoteUser": "vscode",
+    "hostRequirements": {
+        "memory": "4gb"
+    },
+    "remoteEnv": {
+        "HOST_PROJECT_PATH": "${localWorkspaceFolder}"
+    }
+}

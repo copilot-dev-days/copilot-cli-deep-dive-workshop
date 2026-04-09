@@ -1,0 +1,52 @@
+FROM mcr.microsoft.com/devcontainers/python:3.11-bookworm
+
+# --- Root-level installs ---
+
+# # Docker CLI + Compose plugin (https://docs.docker.com/engine/install/debian/)
+# RUN install -m 0755 -d /etc/apt/keyrings \
+#     && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
+#     && chmod a+r /etc/apt/keyrings/docker.asc \
+#     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" \
+#        > /etc/apt/sources.list.d/docker.list \
+#     && apt-get update \
+#     && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin \
+#     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# GitHub CLI (https://github.com/cli/cli/blob/trunk/docs/install_linux.md)
+RUN mkdir -p -m 755 /etc/apt/keyrings \
+    && wget -nv -O- https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+       | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+    && chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+       > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update \
+    && apt-get install -y gh \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# # Azure CLI (https://learn.microsoft.com/cli/azure/install-azure-cli-linux?pivots=apt)
+# RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
+# just (https://just.systems/man/en/pre-built-binaries.html)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+
+# Add vscode user to docker group
+RUN groupadd -f docker && usermod -aG docker vscode
+
+# Shell history directory
+RUN mkdir -p /commandhistory && chown vscode:vscode /commandhistory
+
+# --- User-level installs ---
+USER vscode
+
+# Node.js LTS via nvm (already in base image)
+RUN bash -c "source /usr/local/share/nvm/nvm.sh && nvm install --lts"
+
+# uv (https://docs.astral.sh/uv/getting-started/installation/)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# install copilot cli
+RUN curl -fsSL https://gh.io/copilot-install | bash
+
+# Shell history config
+RUN echo 'export HISTFILE=/commandhistory/.zsh_history' >> ~/.zshrc \
+    && echo 'export HISTFILE=/commandhistory/.bash_history' >> ~/.bashrc
