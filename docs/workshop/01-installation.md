@@ -270,6 +270,7 @@ Copilot correctly identifies your working directory and shows available commands
 | Authentication fails | Check subscription status at github.com/settings/copilot |
 | Permission denied (npm) | Don't use sudo; fix npm permissions instead |
 | Organization policy error | Ask your admin to enable Copilot CLI policy |
+| `/logout` shows warning | When signed in via gh CLI, PAT, API key, or env var, `/logout` displays a warning explaining that the credential source must be removed separately |
 | Auto-update interfering | Disable with `--no-auto-update` or set `COPILOT_AUTO_UPDATE=false` |
 | Auth fails in Docker/container | Use PAT auth: `export GH_TOKEN="ghp_..."`. See [Authentication in Containers](#authentication-in-containers-and-ci-cd) below |
 
@@ -332,6 +333,7 @@ This stores credentials separately from github.com, allowing you to connect to y
 - ✅ Auto-updates can be disabled with `--no-auto-update`
 - ✅ Use `--binary-version` to check the installed version without launching
 - ✅ Use `/version` and `/changelog` inside sessions for version info
+- ✅ `/logout` warns when credential source is external (gh CLI, PAT, env var)
 
 ## Next Steps
 

@@ -25,6 +25,8 @@ Copilot CLI stores its configuration at ~/.copilot/config.json (or the directory
 copilot --config-dir /path/to/custom/config
 ```
 
+> **Note (v1.0.17+):** The `--config-dir` flag is now respected for model selection — when you specify a custom config directory, the model preference stored in that directory's config.json is used instead of the default.
+
 ### Configuration Options Reference
 
 All options below are set in ~/.copilot/config.json:
@@ -45,19 +47,19 @@ All options below are set in ~/.copilot/config.json:
   "renderMarkdown": true,
   "screenReader": false,
   "streamerMode": false,
-  "includeCoauthor": true,
+  "includeCoAuthoredBy": true,
   "updateTerminalTitle": true,
   "logLevel": "default",
   "ide": {
-    "autoConnect": true,
-    "openDiffOnEdit": true
+    "auto_connect": true,
+    "open_diff_on_edit": true
   },
-  "customAgents": {
-    "defaultLocalOnly": false
+  "custom_agents": {
+    "default_local_only": false
   },
-  "trustedFolders": [],
-  "allowedUrls": [],
-  "deniedUrls": [],
+  "trusted_folders": [],
+  "allowed_urls": [],
+  "denied_urls": [],
   "companyAnnouncements": []
 }
 ```
@@ -78,17 +80,16 @@ All options below are set in ~/.copilot/config.json:
 | `renderMarkdown` | bool | `true` | Render markdown formatting in terminal output |
 | `screenReader` | bool | `false` | Enable screen reader optimizations |
 | `streamerMode` | bool | `false` | Hide preview model names and quota details (for streaming/screen sharing) |
-| `includeCoauthor` | bool | `true` | Instruct agent to add Co-authored-by trailer to git commits |
+| `includeCoAuthoredBy` | bool | `true` | Instruct agent to add Co-authored-by trailer to git commits |
 | `updateTerminalTitle` | bool | `true` | Show current intent in terminal title bar |
 | `logLevel` | string | `"default"` | Log level: `"none"`, `"error"`, `"warning"`, `"info"`, `"debug"`, `"all"` |
-| `ide.autoConnect` | bool | `true` | Auto-connect to IDE workspace on startup |
-| `ide.openDiffOnEdit` | bool | `true` | Open file edit diffs in connected IDE for approval |
-| `customAgents.defaultLocalOnly` | bool | `false` | Default to local agents only (skip remote org/enterprise agents) |
-| `trustedFolders` | array | `[]` | Folders granted read/execute permission |
-| `allowedUrls` | array | `[]` | URLs/domains allowed without prompting (supports wildcards like `*.github.com`) |
-| `deniedUrls` | array | `[]` | URLs/domains denied access (takes precedence over allowed) |
+| `ide.auto_connect` | bool | `true` | Auto-connect to IDE workspace on startup |
+| `ide.open_diff_on_edit` | bool | `true` | Open file edit diffs in connected IDE for approval |
+| `custom_agents.default_local_only` | bool | `false` | Default to local agents only (skip remote org/enterprise agents) |
+| `trusted_folders` | array | `[]` | Folders granted read/execute permission |
+| `allowed_urls` | array | `[]` | URLs/domains allowed without prompting (supports wildcards like `*.github.com`) |
+| `denied_urls` | array | `[]` | URLs/domains denied access (takes precedence over allowed) |
 | `companyAnnouncements` | array | `[]` | Custom startup messages (one randomly selected per session) |
-| `mergeStrategy` | string | `"merge"` | Git merge strategy for PR operations (renamed from `merge_strategy` in v1.0.3) |
 
 ### Environment Variables Reference
 
@@ -126,6 +127,29 @@ All options below are set in ~/.copilot/config.json:
 | `--model <model>` | Set AI model |
 | `--reasoning-effort <level>` | Set reasoning effort level for model |
 | `--binary-version` | Query CLI binary version without launching |
+
+### The `/env` Command (v1.0.17+)
+
+Use `/env` inside an interactive session to see a comprehensive view of the loaded environment:
+
+```
+/env
+```
+
+This displays:
+- Active instruction files and their sources
+- Loaded MCP servers and their status
+- Available skills (project, personal, built-in)
+- Installed plugins
+- Current model and configuration directory
+
+### The `copilot help monitoring` Topic (v1.0.17+)
+
+```bash
+copilot help monitoring
+```
+
+This displays documentation on configuring OpenTelemetry for Copilot CLI observability, including OTLP exporter settings, span attributes, and monitoring backend integration.
 | `--resume [sessionId]` | Resume previous session |
 | `--continue` | Resume most recent session |
 | `--yolo` / `--allow-all` | Enable all permissions |
@@ -280,16 +304,16 @@ You can control Copilot behavior via environment variables and understand their 
    ```json
    {
      "ide": {
-       "autoConnect": true,
-       "openDiffOnEdit": true
+       "auto_connect": true,
+       "open_diff_on_edit": true
      }
    }
    ```
 
-   - `autoConnect: false` prevents auto-connecting to IDEs on startup
-   - `openDiffOnEdit: false` shows file diffs in terminal only, not in IDE
+   - `auto_connect: false` prevents auto-connecting to IDEs on startup
+   - `open_diff_on_edit: false` shows file diffs in terminal only, not in IDE
 
-4. Test the difference: with `openDiffOnEdit: true`, ask Copilot to edit a file and observe the diff opening in VS Code.
+4. Test the difference: with `open_diff_on_edit: true`, ask Copilot to edit a file and observe the diff opening in VS Code.
 
 **Expected Outcome:**
 You understand how Copilot integrates with IDEs and can customize the behavior.
@@ -361,12 +385,12 @@ You can configure Copilot for streaming, screen readers, and plain-text environm
    ```json
    {
      "model": "gpt-4.1",
-     "includeCoauthor": true,
+     "includeCoAuthoredBy": true,
      "compactPaste": true,
      "updateTerminalTitle": true,
      "beep": true,
-     "customAgents": {
-       "defaultLocalOnly": false
+     "custom_agents": {
+       "default_local_only": false
      }
    }
    ```
@@ -426,9 +450,9 @@ You can enable detailed logging and understand the log directory structure.
 - ✅ `compactPaste` auto-collapses large pastes into compact tokens
 - ✅ `copyOnSelect` enables clipboard integration
 - ✅ `companyAnnouncements` broadcasts team messages on startup
-- ✅ `includeCoauthor` auto-adds Co-authored-by to commits
+- ✅ `includeCoAuthoredBy` auto-adds Co-authored-by to commits
 - ✅ `updateTerminalTitle` shows current intent in terminal title
-- ✅ IDE integration is controlled via `ide.autoConnect` and `ide.openDiffOnEdit`
+- ✅ IDE integration is controlled via `ide.auto_connect` and `ide.open_diff_on_edit`
 - ✅ `/ide` connects to IDE workspaces, `/streamer-mode` hides sensitive info
 - ✅ `/copy` copies last response to clipboard
 - ✅ Environment variables control auth, model, editor, and instruction paths
@@ -438,8 +462,10 @@ You can enable detailed logging and understand the log directory structure.
 - ✅ `--screen-reader`, `--no-color`, `--plain-diff` for accessibility
 - ✅ Proxy support via `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` environment variables
 - ✅ `--reasoning-effort` flag controls model reasoning level (v1.0.4+)
-- ✅ `mergeStrategy` replaces deprecated `merge_strategy` config key (v1.0.3+)
 - ✅ `--binary-version` checks installed version without launching (v1.0.3+)
+- ✅ `/env` command shows loaded environment details (v1.0.17+)
+- ✅ `--config-dir` respected for model selection (v1.0.17+)
+- ✅ `copilot help monitoring` documents OpenTelemetry configuration (v1.0.17+)
 
 ## Workshop Complete! 🎉
 

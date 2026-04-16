@@ -59,8 +59,15 @@ Use `/mcp show` to check which servers are connected and their current status.
 
 ### Configuration Location
 
+> ⚠️ **BREAKING CHANGE (v1.0.17+):** `.vscode/mcp.json` is no longer read as an MCP config source. Copilot CLI now only reads MCP configuration from:
+> - `~/.copilot/mcp-config.json` (user-level)
+> - `.mcp.json` (project-level, in repository root)
+> - `.devcontainer/devcontainer.json` (DevContainer environments)
+>
+> **Migration:** If you have MCP servers configured in `.vscode/mcp.json`, move them to `.mcp.json` in your repository root.
+
 MCP servers are configured in:
-- Default: `~/.copilot/mcp-config.json`
+- Default: `~/.copilot/mcp-config.json` (user) or `.mcp.json` (project)
 - Custom: Set via `XDG_CONFIG_HOME`
 
 ### DevContainer MCP Configuration
@@ -92,6 +99,49 @@ MCP servers defined in `devcontainer.json` are merged with your personal `~/.cop
 > Organization administrators can block third-party MCP servers via policy enforcement. When a policy is active, users in the organization will be prevented from connecting to MCP servers that are not on the allow-list. This is enforced at the CLI level — blocked servers will not start or connect.
 
 > ⚠️ **FEEDBACK**: MCP policy enforcement requires a Copilot Enterprise or Business subscription with organization-level policy management. Behavior may vary depending on how your org admin has configured the policy.
+
+### Install MCP Servers from Registry (v1.0.17+) — MAJOR
+
+> Since v1.0.17, you can install MCP servers directly from the MCP registry with guided configuration:
+>
+> ```
+> /mcp install
+> ```
+>
+> This provides:
+> - **Registry browsing** — search and discover MCP servers from the registry
+> - **Guided configuration** — interactive setup with prompted fields for API keys, URLs, and options
+> - **Automatic config updates** — the selected server is added to your MCP config automatically
+>
+> This is the recommended way to add new MCP servers, as it handles configuration correctly without manual JSON editing.
+
+### `copilot mcp` CLI Command (v1.0.17+) — MAJOR
+
+> The new `copilot mcp` top-level command lets you manage MCP servers directly from the command line without starting an interactive session:
+>
+> ```bash
+> # List configured MCP servers
+> copilot mcp list
+>
+> # Add an MCP server
+> copilot mcp add <name> --type http --url https://example.com/mcp
+>
+> # Remove an MCP server
+> copilot mcp remove <name>
+>
+> # Show details for a specific server
+> copilot mcp get <name>
+> ```
+>
+> This is useful for scripting MCP configuration and managing servers in CI/CD environments.
+
+### MCP Remote Server Auto-Retry (v1.0.17+)
+
+> Remote MCP servers (HTTP/SSE) now automatically retry on transient network failures (connection timeouts, temporary DNS failures, HTTP 5xx errors). The retry uses exponential backoff with up to 3 attempts before surfacing the error.
+
+### MCP OAuth HTTPS Redirect (v1.0.17+)
+
+> MCP servers using OAuth authentication now support HTTPS redirect URIs via a self-signed certificate fallback. This enables OAuth flows in environments where only HTTPS redirect URIs are permitted by the identity provider.
 
 ### Built-in GitHub MCP Server Controls
 
@@ -553,8 +603,8 @@ MCP server names (the keys in `"mcpServers"`) support dots (`.`), slashes (`/`),
 | `/mcp add` | Add a new server interactively (available immediately) |
 | `/mcp edit NAME` | Edit an existing server |
 | `/mcp delete NAME` | Remove a server |
-| `/mcp disable NAME` | Temporarily disable |
-| `/mcp enable NAME` | Re-enable a disabled server |
+| `/mcp disable NAME` | Temporarily disable (persists across sessions since v1.0.17) |
+| `/mcp enable NAME` | Re-enable a disabled server (persists across sessions since v1.0.17) |
 | `/mcp reload` | Reload MCP configuration without restarting |
 
 ## Summary
@@ -579,6 +629,12 @@ MCP server names (the keys in `"mcpServers"`) support dots (`.`), slashes (`/`),
 - ✅ Env vars referenced in `command`/`args`/`cwd` are auto-inherited
 - ✅ `--additional-mcp-config` loads temporary servers
 - ✅ MCP config from `.devcontainer/devcontainer.json` (v1.0.3+)
+- ✅ ⚠️ **BREAKING**: `.vscode/mcp.json` removed as config source — use `.mcp.json` instead (v1.0.17+)
+- ✅ Install MCP servers from registry with `/mcp install` guided setup (v1.0.17+)
+- ✅ `copilot mcp` CLI command for managing servers from the command line (v1.0.17+)
+- ✅ Remote server auto-retry on transient network failures (v1.0.17+)
+- ✅ `/mcp enable`/`disable` state persists across sessions (v1.0.17+)
+- ✅ MCP OAuth HTTPS redirect URI via self-signed cert fallback (v1.0.17+)
 
 ## Next Steps
 

@@ -39,7 +39,7 @@ Session Overrides (flags)
 | `~/.agents/skills/` | Personal skill discovery directory (shared with VS Code extension) |
 | `.github/` | Repository config |
 
-### New Commands & Features (v1.0.3–v1.0.16)
+### New Commands & Features (v1.0.3–v1.0.27)
 
 Several commands and features have been added since v1.0.2:
 
@@ -80,6 +80,41 @@ Use `--effort` as a shorthand alias for `--reasoning-effort` to control model re
 #### `--resume` Enhancements
 
 `--resume` now accepts a task ID in addition to a session ID.
+
+#### Remote Control Sessions (v1.0.17+)
+
+> The former "steering" feature has been renamed to **remote control**. Use the `--remote` flag or `/remote` command to start a remote control session:
+>
+> ```bash
+> # Start Copilot with remote control enabled
+> copilot --remote
+>
+> # Or enable in an existing session
+> /remote
+> ```
+>
+> Remote control allows another Copilot CLI instance to connect and observe or control your session — useful for pair programming, teaching, and debugging.
+
+#### ACP Clients Provide MCP Servers (v1.0.17+)
+
+> ACP (Agent Client Protocol) clients can now provide MCP servers when starting or loading sessions. This enables IDE integrations to inject MCP server configurations into CLI sessions dynamically.
+
+#### `copilot help monitoring` (v1.0.17+)
+
+> The new `copilot help monitoring` topic documents how to configure OpenTelemetry for observability:
+>
+> ```bash
+> copilot help monitoring
+> ```
+>
+> This covers OTLP exporter configuration, span attributes, and integration with monitoring backends.
+
+#### OpenTelemetry Monitoring Enhancements (v1.0.17+)
+
+> OpenTelemetry monitoring has been expanded:
+> - Sub-agent spans are now tagged as `INTERNAL` spans for better trace visualization
+> - `time_to_first_chunk` metric tracks latency from request to first streaming chunk
+> - Improved span attributes for debugging agent behavior and performance
 
 ## Hands-On Exercises
 
@@ -774,7 +809,7 @@ Language server timeouts are configured for your environment, eliminating timeou
 
  ```json
  {
- "trustedFolders": [
+ "trusted_folders": [
  "/home/user/projects",
  "/home/user/work"
  ],
@@ -788,7 +823,7 @@ Language server timeouts are configured for your environment, eliminating timeou
 
  ```bash
  # Using jq to update config
- jq '.trustedFolders += ["/new/path"]' ~/.copilot/config.json > tmp.json
+ jq '.trusted_folders += ["/new/path"]' ~/.copilot/config.json > tmp.json
  mv tmp.json ~/.copilot/config.json
  ```
 
@@ -796,11 +831,11 @@ Language server timeouts are configured for your environment, eliminating timeou
 
  ```json
  {
- "allowedUrls": [
+ "allowed_urls": [
  "https://api.github.com/*",
  "https://docs.github.com/*"
  ],
- "deniedUrls": [
+ "denied_urls": [
  "https://evil.com/*"
  ]
  }
@@ -1249,6 +1284,10 @@ alias cop-resume='copilot --resume'
 - ✅ **`--output-format json`** enables JSONL output for scripting
 - ✅ **`--stream`** controls streaming mode
 - ✅ **`-i, --interactive`** starts interactive mode with auto-executed prompt
+- ✅ **Remote control sessions** via `--remote` or `/remote` (replaces "steering") (v1.0.17+)
+- ✅ **ACP clients** can provide MCP servers when starting/loading sessions (v1.0.17+)
+- ✅ **`copilot help monitoring`** documents OpenTelemetry configuration (v1.0.17+)
+- ✅ **OpenTelemetry enhancements** — sub-agent INTERNAL spans, `time_to_first_chunk` metric (v1.0.17+)
 - ✅ **LSP configuration** controls language server timeouts; default request timeout is 90s
 - ✅ **Shell mode access** via `!` command
 - ✅ config.json and lsp.json persist preferences

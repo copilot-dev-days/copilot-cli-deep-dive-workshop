@@ -135,6 +135,12 @@ copilot --binary-version
 
 ---
 
+## New in v1.0.17–v1.0.27
+
+- **`/logout` warning** — Shows warning when signed in via gh CLI, PAT, API key, or env var
+
+---
+
 ## Your Turn! 🚀
 
 Open **Module 1** in `docs/workshop/01-installation.md`

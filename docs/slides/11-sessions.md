@@ -130,6 +130,13 @@ Copilot can only access directories you've allowed
 
 ---
 
+## New in v1.0.17–v1.0.27
+
+- **`/share html`** — Shows `file://` URL and `Ctrl+X O` to open in browser
+- **Remote control sessions** — `--remote` or `/remote` for observing/controlling sessions
+
+---
+
 ## Your Turn! 🚀
 
 Open **Module 11** in `docs/workshop/11-sessions.md`

@@ -140,7 +140,7 @@ Type **`/help`** to see them all
 |----------|-------------|
 | **Review** | `/plan`, `/review`, `/diff`, `/research` |
 | **Session** | `/clear`, `/resume`, `/rename`, `/session`, `/usage` |
-| **Navigation** | `/cwd`, `/cd`, `/add-dir`, `/list-dirs` |
+| **Navigation** | `/cwd`, `/add-dir`, `/list-dirs` |
 | **Context** | `/context`, `/compact` |
 | **Config** | `/model`, `/mcp`, `/theme`, `/terminal-setup`, `/streamer-mode`, `/instructions` |
 | **Tools** | `/allow-all`, `/yolo`, `/reset-allowed-tools` |
@@ -189,18 +189,24 @@ When Copilot wants to run a command, you choose:
 
 ---
 
-## New in v1.0.3–v1.0.16
+## New in v1.0.3–v1.0.27
 
 - **`/restart`** — Hot restart preserving your session
 - **`/diff`** now has **syntax highlighting** (17 languages) with Home/End and Page Up/Page Down navigation
 - **Branch indicator** in header: `main*+%`
   - `*` unstaged, `+` staged, `%` untracked
-- **`quit`** works as exit alias (alongside `/exit`)
 - **Double-Esc** — opens timeline picker to roll back to any conversation point
 - **`/undo`** — Undo last turn and revert file changes
 - **`/new`** — Start fresh conversation (old session stays backgrounded)
 - **`/clear`** — Abandon session entirely
 - **`/allow-all [on|off|show]`** — Toggle or check allow-all mode
+- **`/ask`** — Quick question without affecting history (v1.0.17+)
+- **`/env`** — Show loaded environment details (v1.0.17+)
+- **`/remote`** — Remote control sessions (replaces "steering") (v1.0.17+)
+- **`--mode`, `--autopilot`, `--plan`** — Start CLI in a specific mode (v1.0.17+)
+- **Status bar hints** — `@files`, `#issues`, `/help` while typing (v1.0.17+)
+- **`Alt+D`** — Delete word forward; **`Ctrl+L`** — Clear screen (v1.0.17+)
+- **`/diff`, `/agent`, `/feedback`, `/ide`** work while agent is running (v1.0.17+)
 
 ---
 

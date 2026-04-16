@@ -211,7 +211,7 @@ alias cop-resume='copilot --resume'
 
 ---
 
-## New in v1.0.3–v1.0.16
+## New in v1.0.3–v1.0.27
 
 - **`/pr`** — Full PR management: create, view, fix CI, review, merge conflicts (v1.0.5)
   - `/pr view local|web` replaces old `/pr open` (v1.0.4) ⚠️
@@ -223,6 +223,10 @@ alias cop-resume='copilot --resume'
 - **`/undo`** — Undo last turn and revert file changes (v1.0.10)
 - **Monorepo discovery** — instructions, MCPs, skills from cwd to git root (v1.0.11)
 - **`/rewind`** — Timeline picker to roll back to any point (v1.0.13)
+- **Remote control** — `--remote` / `/remote` replaces "steering" (v1.0.17)
+- **ACP clients** provide MCP servers to sessions (v1.0.17)
+- **`copilot help monitoring`** — OpenTelemetry docs (v1.0.17)
+- **OpenTelemetry** — sub-agent INTERNAL spans, `time_to_first_chunk` (v1.0.17)
 
 ---
 

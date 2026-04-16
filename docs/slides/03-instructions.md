@@ -166,7 +166,7 @@ Saved as `.github/instructions/tests.instructions.md`
 
 ---
 
-## New in v1.0.6–v1.0.16
+## New in v1.0.6–v1.0.27
 
 - **`applyTo`** now accepts **YAML arrays** (v1.0.6+):
   ```yaml
@@ -177,6 +177,8 @@ Saved as `.github/instructions/tests.instructions.md`
 - **"Customize" mode** for system message overrides (v1.0.7+)
 - **`COPILOT_CUSTOM_INSTRUCTIONS_DIRS`** for extra instruction paths
 - **Monorepo discovery** — instructions found from cwd up to git root (v1.0.11+)
+- **`applyTo` consolidation** — files with `applyTo` grouped into table for reduced context (v1.0.17+)
+- **Duplicate dedup** — instruction files found from multiple paths loaded only once (v1.0.17+)
 
 ---
 

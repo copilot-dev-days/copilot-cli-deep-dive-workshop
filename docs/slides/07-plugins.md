@@ -165,6 +165,9 @@ copilot --allow-tool 'plugin-name' --deny-tool 'shell(rm)'
 - **Open Plugins spec** support (v1.0.6):
   - `.lsp.json` manifests, PascalCase events, `exclusive` path mode
   - Cross-platform compatibility with VS Code and Claude Code
+- **`copilot plugin marketplace update`** — Refresh catalogs (v1.0.17+)
+- **`PLUGIN_ROOT` env vars** in plugin hooks (v1.0.17+)
+- **Post-install messages** displayed after `/plugin install` (v1.0.17+)
 
 ---
 

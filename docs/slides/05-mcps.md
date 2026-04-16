@@ -205,6 +205,17 @@ Merged with personal `~/.copilot/mcp-config.json` automatically
 
 ---
 
+## New in v1.0.17–v1.0.27
+
+- ⚠️ **BREAKING**: `.vscode/mcp.json` removed — use `.mcp.json` instead
+- **`/mcp install`** — Install from MCP registry with guided config
+- **`copilot mcp`** — Manage MCP servers from CLI (list, add, remove, show)
+- **Auto-retry** — Remote servers retry on transient network failures
+- **`/mcp enable`/`disable` persist** across sessions
+- **OAuth HTTPS redirect** via self-signed cert fallback
+
+---
+
 ## Your Turn! 🚀
 
 Open **Module 5** in `docs/workshop/05-mcps.md`

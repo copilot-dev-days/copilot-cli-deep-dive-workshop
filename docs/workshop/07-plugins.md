@@ -79,6 +79,18 @@ Key capabilities:
 5. **Custom plugins** - Your own integrations
 6. **Remote sources** - GitHub repos and git URLs referenced in `marketplace.json`
 
+### Plugin Catalog Refresh (v1.0.17+)
+
+> Use `copilot plugin marketplace update` to refresh plugin catalogs from all configured marketplaces. This downloads the latest plugin listings without reinstalling any plugins.
+
+### Plugin Hooks and Environment (v1.0.17+)
+
+> Plugins hooks now receive `PLUGIN_ROOT` environment variables, pointing to the plugin's installation directory. This allows hook scripts to reference files within the plugin package without hardcoding paths.
+
+### Post-Install Messages (v1.0.17+)
+
+> Plugins can now declare a post-install message in their manifest. After `/plugin install` completes, the message is displayed to the user — useful for setup instructions, configuration requirements, or usage tips.
+
 > [!NOTE]
 > Two marketplaces are included by default and do not need to be added: `copilot-plugins` (github/copilot-plugins) and `awesome-copilot` (github/awesome-copilot). Additional marketplaces can be configured via the `extraKnownMarketplaces` repository setting.
 
@@ -563,6 +575,9 @@ copilot --plugin-dir ./plugin-a --plugin-dir ./plugin-b
 - ✅ Extensions (experimental) — runtime tools via `@github/copilot-sdk` (v1.0.3+)
 - ✅ `/extensions` command to view, enable, and disable extensions (v1.0.5+)
 - ✅ Open Plugins spec support for cross-platform compatibility (v1.0.6+)
+- ✅ `copilot plugin marketplace update` refreshes plugin catalogs (v1.0.17+)
+- ✅ Plugin hooks receive `PLUGIN_ROOT` env vars (v1.0.17+)
+- ✅ Plugins display post-install messages after `/plugin install` (v1.0.17+)
 
 > [!NOTE]
 > Local paths with spaces are supported in marketplace source configurations.

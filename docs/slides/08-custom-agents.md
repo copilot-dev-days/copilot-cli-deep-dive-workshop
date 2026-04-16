@@ -157,6 +157,15 @@ Help me set up an MCP server for PostgreSQL
 
 ---
 
+## New in v1.0.17–v1.0.27
+
+- **`model` field** accepts display names and vendor suffixes
+- **`skills` field** — eagerly load named skills in agent profile
+- **Sub-agent limits** — depth and concurrency limits prevent runaway recursion
+- ⚠️ **Critic agent** (experimental) — automated review of agent-generated output
+
+---
+
 ## Your Turn! 🚀
 
 Open **Module 8** in `docs/workshop/08-custom-agents.md`

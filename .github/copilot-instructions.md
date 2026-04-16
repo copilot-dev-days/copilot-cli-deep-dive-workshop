@@ -28,7 +28,7 @@ REPO_STRUCTURE: TEXT
 
 WORKSHOP_FLOW: "Installation (01) -> Core Concepts (02-05) -> Advanced (06-13)"
 WORKSHOP_DURATION: "~4.5 hours"
-TESTED_VERSION: "GitHub Copilot CLI v1.0.16"
+TESTED_VERSION: "GitHub Copilot CLI v1.0.27"
 RELEASES_URL: "https://github.com/github/copilot-cli/releases"
 MODULE_COUNT: 13
 SLIDE_SYNC_RULE: "When modifying docs/workshop/NN-*.md, always check and update docs/slides/NN-*.md"

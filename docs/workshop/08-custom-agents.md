@@ -32,14 +32,21 @@ Each custom agent is defined by a Markdown file with an **`.agent.md`** extensio
 ---
 name: agent-name
 description: What this agent does
-model: claude-sonnet-4.6 # Optional: override AI model
+model: claude-sonnet-4.6 # Optional: override AI model (accepts display names and vendor suffixes)
 tools: # Optional: default is all tools
  - shell
  - write
+skills: # Optional (v1.0.17+): eagerly load named skills
+ - api-docs
+ - test-writer
 ---
 
 [Markdown body with detailed instructions]
 ```
+
+> **Note (v1.0.17+):** The `model` field now accepts display names (e.g., `"Claude Sonnet 4.6"`) and vendor suffixes (e.g., `"sonnet-4.6"`) in addition to the full model identifier. Copilot resolves the closest matching model.
+
+> **Note (v1.0.17+):** The `skills` field declares which skills should be eagerly loaded when the agent is invoked. Without this field, skills are loaded on-demand based on prompt matching. Eager loading ensures the agent always has access to specific skill content.
 
 ### Creating Agents
 
@@ -95,6 +102,30 @@ Copilot CLI includes specialized built-in agents:
 | **Code-review** | High signal-to-noise code reviews |
 
 > **Note:** Built-in agents are not included in the `/agent` list. They are invoked via the main agent's task tool.
+
+### Critic Agent (v1.0.17+) — Experimental — MAJOR
+
+> ⚠️ **FEEDBACK**: The **critic agent** is an experimental built-in agent available since v1.0.17. It provides automated review and critique of agent-generated output before it is finalized.
+>
+> The critic agent:
+> - Reviews code changes made by other agents for quality and correctness
+> - Identifies potential issues, edge cases, and improvements
+> - Provides feedback that can be incorporated before finalizing changes
+>
+> Enable experimental features to use the critic agent:
+> ```bash
+> copilot --experimental
+> ```
+>
+> The critic agent's behavior and availability may change in future releases.
+
+### Sub-Agent Depth and Concurrency Limits (v1.0.17+)
+
+> Copilot CLI now enforces **depth and concurrency limits** on sub-agents:
+> - **Depth limit**: Prevents infinite sub-agent recursion (agent spawning agent spawning agent...)
+> - **Concurrency limit**: Controls how many sub-agents can run simultaneously
+>
+> These limits prevent runaway resource consumption and ensure predictable behavior when agents delegate to other agents. The limits are configurable but have sensible defaults.
 
 ### Configure-Copilot Sub-Agent
 
@@ -529,9 +560,9 @@ Agent performs analysis without modification capabilities.
 
 > **Note:** Enterprise and organization-level agents are configured by admins in a `.github-private` repository. See the [GitHub Docs](https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-for-organization/prepare-for-custom-agents) for details.
 
-> ⚠️ **FEEDBACK**: The `customAgents.defaultLocalOnly` config option allows you to default to only local custom agents, skipping remote org/enterprise agents. Set it in `~/.copilot/config.json`:
+> ⚠️ **FEEDBACK**: The `custom_agents.default_local_only` config option allows you to default to only local custom agents, skipping remote org/enterprise agents. Set it in `~/.copilot/config.json`:
 > ```json
-> { "customAgents": { "defaultLocalOnly": true } }
+> { "custom_agents": { "default_local_only": true } }
 > ```
 
 **Expected Outcome:**
@@ -675,13 +706,15 @@ description: What this agent does # Required, max 1024 chars
 ---
 name: agent-name
 description: Description
-model: gpt-4.1 # Optional: specify AI model
+model: gpt-4.1 # Optional: specify AI model (display names and vendor suffixes accepted)
 tools: # Optional, defaults to all
  - shell
  - write
  - read
  - web_fetch
  - mcp-server-name
+skills: # Optional (v1.0.17+): eagerly load named skills
+ - skill-name
 ---
 ```
 
@@ -720,6 +753,10 @@ tools: # Optional, defaults to all
 - ✅ Agents can delegate to other agents for complex workflows
 - ✅ Restart the CLI after creating new `.agent.md` files (plugin-installed agents hot-load without restart)
 - ✅ `configure-copilot` built-in sub-agent manages MCP, agents, and skills (v1.0.4+)
+- ✅ Agent `model` field accepts display names and vendor suffixes (v1.0.17+)
+- ✅ Agent `skills` field eagerly loads named skills (v1.0.17+)
+- ✅ Sub-agent depth and concurrency limits prevent runaway resource consumption (v1.0.17+)
+- ✅ ⚠️ **Experimental**: Critic agent provides automated review of agent output (v1.0.17+)
 
 ## Next Steps
 

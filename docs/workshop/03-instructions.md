@@ -57,6 +57,14 @@ This displays all discovered instruction files (AGENTS.md, copilot-instructions.
 
 This is especially helpful when multiple instruction files interact and you need to isolate which one is causing unexpected behavior.
 
+### Instruction File Consolidation (v1.0.17+)
+
+> Since v1.0.17, instruction files with `applyTo` frontmatter are consolidated into a single table display in `/instructions` output. This reduces context usage by grouping path-specific instructions together instead of listing them individually.
+
+### Duplicate Instruction File Dedup (v1.0.17+)
+
+> Copilot CLI now automatically deduplicates instruction files that are discovered from multiple paths (e.g., when `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` overlaps with the project directory). Each unique instruction file is loaded only once, even if found in multiple locations.
+
 ### Disabling Custom Instructions
 
 You can completely disable loading of custom instructions from AGENTS.md and related files:
@@ -483,6 +491,8 @@ Commit messages follow Conventional Commits format.
 - ✅ `--no-custom-instructions` disables all instruction file loading
 - ✅ `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` adds extra instruction search paths
 - ✅ `applyTo` accepts both string and array formats (v1.0.6+)
+- ✅ `applyTo` instruction files consolidated into table for reduced context usage (v1.0.17+)
+- ✅ Duplicate instruction files are automatically deduplicated (v1.0.17+)
 
 ## Next Steps
 

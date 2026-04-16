@@ -82,7 +82,7 @@ All settings live in `~/.copilot/config.json`:
   "mouse": true,
   "beep": true,
   "compactPaste": true,
-  "includeCoauthor": true,
+  "includeCoAuthoredBy": true,
   "updateTerminalTitle": true,
   "streamerMode": false
 }
@@ -99,11 +99,11 @@ Override location: `COPILOT_HOME` env var or `--config-dir` flag
 | `model` | (varies) | AI model |
 | `compactPaste` | `true` | Collapse large pastes |
 | `copyOnSelect` | macOS only | Auto-copy selection |
-| `includeCoauthor` | `true` | Co-authored-by in commits |
+| `includeCoAuthoredBy` | `true` | Co-authored-by in commits |
 | `streamerMode` | `false` | Hide model names/quota |
 | `companyAnnouncements` | `[]` | Team startup messages |
-| `ide.autoConnect` | `true` | Auto-connect to IDE |
-| `ide.openDiffOnEdit` | `true` | Diffs in IDE |
+| `ide.auto_connect` | `true` | Auto-connect to IDE |
+| `ide.open_diff_on_edit` | `true` | Diffs in IDE |
 
 ---
 
@@ -164,7 +164,7 @@ Config options:
     "Remember: never commit secrets",
     "Sprint 14 ends Friday"
   ],
-  "includeCoauthor": true,
+  "includeCoAuthoredBy": true,
   "model": "gpt-4.1"
 }
 ```
@@ -173,11 +173,11 @@ Distribute via shared config templates in your repo.
 
 ---
 
-## New Config & Flags (v1.0.3–v1.0.16)
+## New Config & Flags (v1.0.3–v1.0.27)
 
 | Feature | Details |
 |---------|---------|
-| `mergeStrategy` | Replaces `merge_strategy` ⚠️ (v1.0.3) |
+
 | `--reasoning-effort` | Control model reasoning level (v1.0.4) |
 | `--effort` | Shorthand for `--reasoning-effort` (v1.0.10) |
 | `--binary-version` | Check version without launching (v1.0.3) |
@@ -185,6 +185,9 @@ Distribute via shared config templates in your repo.
 | `HTTP_PROXY` / `HTTPS_PROXY` | Proxy support |
 | `NO_PROXY` | Bypass proxy for specific hosts |
 | camelCase config | All config keys now prefer camelCase (v1.0.10+) |
+| `/env` command | Show loaded environment details (v1.0.17+) |
+| `--config-dir` | Respected for model selection (v1.0.17+) |
+| `copilot help monitoring` | OpenTelemetry config docs (v1.0.17+) |
 
 ---
 

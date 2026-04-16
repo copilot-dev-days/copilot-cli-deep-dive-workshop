@@ -1,6 +1,6 @@
 # GitHub Copilot CLI Workshop
 
-> **Tested against:** GitHub Copilot CLI **v1.0.16** (Generally Available, version 1.0 since v1.0.0). Check [releases](https://github.com/github/copilot-cli/releases) for newer versions — some features may change or new ones may be added.
+> **Tested against:** GitHub Copilot CLI **v1.0.27** (Generally Available, version 1.0 since v1.0.0). Check [releases](https://github.com/github/copilot-cli/releases) for newer versions — some features may change or new ones may be added.
 
 Welcome to this hands-on workshop for mastering GitHub Copilot CLI! This workshop will take you from installation to advanced automation techniques.
 
@@ -95,6 +95,7 @@ copilot --resume
 | Command | Description |
 | --- | --- |
 | `/help` | Show all available commands |
+| `/ask` | Ask a quick question without affecting conversation history |
 | `/clear` | Abandon session and start fresh |
 | `/new` | Start new conversation (old session stays backgrounded) |
 | `/context` | View token usage |

@@ -1,6 +1,10 @@
 {
     "name": "copilot-cli-deep-dive-workshop",
     "image": "mcr.microsoft.com/devcontainers/python:3.11-bookworm",
+    "runArgs": [
+        "--name",
+        "ccddw"
+    ],
     "features": {
         "ghcr.io/devcontainers/features/common-utils:2": {
             "configureZshAsDefaultShell": true,

@@ -467,8 +467,8 @@ Systematic workflow keeps context under control.
 | `/compact` | Compress session history |
 | `/clear` | Abandon session and start fresh (session is discarded) |
 | `/new` | Start new conversation (old session stays backgrounded) |
-| `/cwd` or `/cd` | Change working directory (affects context scope) |
-| `/add-dir` | Add directory to accessible scope (persists across `/clear` and `/resume`) |
+| `/cwd` | Change working directory (affects context scope) |
+| `/add-dir` | Add directory to accessible scope (persists across `/clear` and `/resume`; supports relative paths like `./src`) |
 | `@path/to/file` | Include specific file contents in your prompt |
 | `#<number>` | Include a GitHub issue, PR, or discussion in your prompt |
 
@@ -526,6 +526,7 @@ Systematic workflow keeps context under control.
 - ✅ Efficient prompting extends useful session length
 - ✅ Explore agent preserves main context
 - ✅ `@` file mentions support absolute, home, and parent paths (v1.0.5+)
+- ✅ Reasoning token usage shown in per-model breakdown via `/usage` (v1.0.17+)
 
 ## Next Steps
 

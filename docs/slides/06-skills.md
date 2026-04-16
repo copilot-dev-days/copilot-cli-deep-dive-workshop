@@ -122,6 +122,14 @@ description: Generates API documentation from source code
 
 ---
 
+## New in v1.0.17–v1.0.27
+
+- **Built-in skills** — CLI ships with skills always available without configuration
+- Built-in skills appear in `/skills` output alongside project/personal skills
+- Override built-in skills by creating project/personal skills with the same name
+
+---
+
 ## Your Turn! 🚀
 
 Open **Module 6** in `docs/workshop/06-skills.md`

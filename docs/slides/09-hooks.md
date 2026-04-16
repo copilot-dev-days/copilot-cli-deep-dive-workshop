@@ -87,6 +87,7 @@ Use cases: **logging**, **security guardrails**, **auditing**, **alerts**
 | `preCompact` | Before compaction | State saving (v1.0.5) |
 | `subagentStart` | Sub-agent spawned | Context injection (v1.0.7) |
 | `permissionRequest` | Permission requested | Programmatic approve/deny (v1.0.16) |
+| `notification` | Shell/agent completion, permissions | External notifications (v1.0.17) |
 
 ---
 
@@ -173,7 +174,7 @@ echo "[$(date -Iseconds)] $TOOL_NAME: $RESULT" >> logs/audit.log
 
 ---
 
-## New Hook Features (v1.0.4–v1.0.16)
+## New Hook Features (v1.0.4–v1.0.27)
 
 - **`disableAllHooks`** config flag — turn off all hooks (v1.0.4)
 - **`ask`** permission decision — prompt user for confirmation (v1.0.4):
@@ -185,6 +186,11 @@ echo "[$(date -Iseconds)] $TOOL_NAME: $RESULT" >> logs/audit.log
 - **`postToolUseFailure`** hook for tool errors; `postToolUse` fires only on success (v1.0.15)
 - **`permissionRequest`** hook for programmatic tool approval (v1.0.16)
 - Hooks can also be defined in **`settings.json`** and **`config.json`** (v1.0.8)
+- ⚠️ **BREAKING**: `preToolUse` respects `modifiedArgs`/`updatedInput`/`additionalContext` (v1.0.17)
+- ⚠️ **BREAKING**: `sessionStart`/`sessionEnd` fire once per session, not per prompt (v1.0.17)
+- **PascalCase payloads** with `hook_event_name`, `session_id`, ISO 8601 timestamps (v1.0.17)
+- **`notification`** hook — fires on shell completion, permissions, elicitation, agent completion (v1.0.17)
+- **`PLUGIN_ROOT`** env vars in plugin hooks (v1.0.17)
 
 ---
 

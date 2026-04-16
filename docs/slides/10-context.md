@@ -101,7 +101,7 @@ Use **`/model`** to switch models. Available models change frequently — check 
 | `/usage` | Session stats (requests, duration, lines edited) | Track consumption |
 | `/compact` | Compress history | Long sessions |
 | `/clear` | Reset everything | Switching topics |
-| `/cwd` or `/cd` | Change working directory | Switch project scope |
+| `/cwd` | Change working directory | Switch project scope |
 | `@path/to/file` | Include file in prompt | Targeted context |
 | `#<number>` | Include issue/PR/discussion | GitHub context |
 
@@ -150,6 +150,8 @@ Show me just @src/auth/middleware.ts
 | `@../parent` | `@../shared-lib/utils.js` | Parent directory |
 
 > `/add-dir` directories now **persist** across `/clear` and `/resume` (v1.0.3)
+> `/add-dir` accepts **relative paths** like `./src`, `../sibling` (v1.0.17+)
+> **Reasoning token usage** shown in per-model breakdown via `/usage` (v1.0.17+)
 
 ---
 
