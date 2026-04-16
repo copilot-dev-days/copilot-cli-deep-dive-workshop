@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Copilot CLI — Deep-Dive Workshop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="step.css">
+    <link rel="stylesheet" href="light-theme.css">
+    <script src="theme-toggle.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="index.html" class="header-brand">
+                <span class="brand-icon">💻</span>
+                <span class="header-title">Copilot CLI Deep-Dive Workshop</span>
+            </a>
+            <div class="header-nav">
+                <button class="theme-toggle" onclick="toggleTheme()">☀️ Light</button>
+                <button class="nav-btn" id="prevBtn" onclick="navigate(-1)" disabled>← Prev</button>
+                <button class="nav-btn" id="nextBtn" onclick="navigate(1)">Next →</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Workshop Modules</div>
+                <nav id="stepNav"></nav>
+            </div>
+        </aside>
+
+        <main class="main">
+            <div class="content">
+                <div id="markdownContent">
+                    <div class="loading">Loading content</div>
+                </div>
+                <div class="nav-footer" id="navFooter"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const steps = [
+            { id: 'index', file: 'workshop/00-index.md', title: 'Workshop Overview', number: '📚' },
+            { id: '01-installation', file: 'workshop/01-installation.md', title: 'Installation', number: '01' },
+            { id: '02-modes', file: 'workshop/02-modes.md', title: 'Operating Modes & Commands', number: '02' },
+            { id: '03-instructions', file: 'workshop/03-instructions.md', title: 'Custom Instructions', number: '03' },
+            { id: '04-tools', file: 'workshop/04-tools.md', title: 'Tools & Permissions', number: '04' },
+            { id: '05-mcps', file: 'workshop/05-mcps.md', title: 'MCP Servers', number: '05' },
+            { id: '06-skills', file: 'workshop/06-skills.md', title: 'Agent Skills', number: '06' },
+            { id: '07-plugins', file: 'workshop/07-plugins.md', title: 'Plugins', number: '07' },
+            { id: '08-custom-agents', file: 'workshop/08-custom-agents.md', title: 'Custom Agents', number: '08' },
+            { id: '09-hooks', file: 'workshop/09-hooks.md', title: 'Hooks', number: '09' },
+            { id: '10-context', file: 'workshop/10-context.md', title: 'Context Management', number: '10' },
+            { id: '11-sessions', file: 'workshop/11-sessions.md', title: 'Session Management', number: '11' },
+            { id: '12-advanced', file: 'workshop/12-advanced.md', title: 'Advanced Topics', number: '12' },
+            { id: '13-configuration', file: 'workshop/13-configuration.md', title: 'Configuration & Environment', number: '13' },
+        ];
+
+        const RAW_DOCS_BASE = 'https://raw.githubusercontent.com/copilot-dev-days/copilot-cli-deep-dive-workshop/main/docs/';
+        const COPY_FEEDBACK_DURATION_MS = 2000;
+        const copyResetTimers = new WeakMap();
+
+        let currentIndex = 0;
+
+        function getStepFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('step') || 'index';
+        }
+
+        function buildSidebar() {
+            const nav = document.getElementById('stepNav');
+            nav.innerHTML = steps.map((step, i) => `
+                <a href="?step=${step.id}" class="step-link ${i === currentIndex ? 'active' : ''}" data-index="${i}">
+                    <span class="step-number">${step.number}</span>
+                    <span>${step.title}</span>
+                </a>
+            `).join('');
+        }
+
+        function updateNavButtons() {
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            document.getElementById('nextBtn').disabled = currentIndex === steps.length - 1;
+        }
+
+        function buildFooterNav() {
+            const footer = document.getElementById('navFooter');
+            const prev = currentIndex > 0 ? steps[currentIndex - 1] : null;
+            const next = currentIndex < steps.length - 1 ? steps[currentIndex + 1] : null;
+            footer.innerHTML = `
+                <a href="${prev ? '?step=' + prev.id : '#'}" class="nav-footer-btn ${!prev ? 'disabled' : ''}">← ${prev ? prev.title : 'Previous'}</a>
+                <a href="${next ? '?step=' + next.id : '#'}" class="nav-footer-btn ${!next ? 'disabled' : ''}">${next ? next.title : 'Next'} →</a>
+            `;
+        }
+
+        function navigate(direction) {
+            const newIndex = currentIndex + direction;
+            if (newIndex >= 0 && newIndex < steps.length) {
+                window.location.href = `?step=${steps[newIndex].id}`;
+            }
+        }
+
+        function resolveStepLink(markdownPath, fragment) {
+            const normalizedPath = markdownPath.replace(/^\.\//, '');
+            const fileName = normalizedPath.split('/').pop();
+            const found = steps.find(function(step) {
+                return step.file.endsWith('/' + fileName);
+            });
+
+            if (!found) {
+                return null;
+            }
+
+            return `?step=${found.id}${fragment || ''}`;
+        }
+
+        function processMarkdown(md) {
+            // Handle GitHub alerts: [!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]
+            md = md.replace(/> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*\n((?:> .*(?:\n|$))*)/gi, function(match, type, content) {
+                const cleanContent = content.replace(/^> ?/gm, '').trim();
+                const icons = { NOTE: 'ℹ️', TIP: '💡', IMPORTANT: '❗', WARNING: '⚠️', CAUTION: '🔴' };
+                const colors = { NOTE: 'var(--neon-cyan)', TIP: 'var(--success-green)', IMPORTANT: 'var(--neon-purple)', WARNING: 'var(--warning-yellow)', CAUTION: '#ff6b6b' };
+                const icon = icons[type.toUpperCase()] || 'ℹ️';
+                const color = colors[type.toUpperCase()] || 'var(--neon-cyan)';
+                return `<blockquote style="border-left-color: ${color};"><p style="color: ${color};">${icon} ${type.toUpperCase()}</p><p>${cleanContent}</p></blockquote>\n`;
+            });
+
+            // Convert internal workshop .md links to step.html links.
+            md = md.replace(/\[([^\]]+)\]\(((?:\.\/)?[^)#]+\.md)(#[^)]+)?\)/g, function(match, text, path, fragment) {
+                const resolvedLink = resolveStepLink(path, fragment);
+                if (!resolvedLink) {
+                    return match;
+                }
+
+                return `[${text}](${resolvedLink})`;
+            });
+
+            return md;
+        }
+
+        async function fetchStepMarkdown(step) {
+            const responses = [];
+
+            responses.push(fetch(step.file));
+            responses.push(fetch(`${RAW_DOCS_BASE}${step.file}`));
+
+            for (const responsePromise of responses) {
+                try {
+                    const response = await responsePromise;
+                    if (response.ok) {
+                        return { markdown: await response.text(), usingRawDocs: response.url.startsWith(RAW_DOCS_BASE) };
+                    }
+                } catch (err) {
+                    // Try the next source.
+                }
+            }
+
+            throw new Error('Could not load workshop markdown from local site or raw GitHub content.');
+        }
+
+        function enhanceCodeBlocks(container) {
+            container.querySelectorAll('pre').forEach(function(pre) {
+                const codeEl = pre.querySelector('code');
+                if (!codeEl) return;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'code-block';
+                pre.parentNode.insertBefore(wrapper, pre);
+                wrapper.appendChild(pre);
+
+                // Detect language from class
+                const langMatch = codeEl.className.match(/language-(\w+)/);
+                const lang = langMatch ? langMatch[1] : '';
+
+                if (lang) {
+                    const langLabel = document.createElement('span');
+                    langLabel.className = 'code-lang-label';
+                    langLabel.textContent = lang;
+                    wrapper.appendChild(langLabel);
+                }
+
+                // Add copy button
+                const rawCode = codeEl.textContent;
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-code-btn';
+                copyBtn.innerHTML = '📋 Copy';
+                copyBtn.title = 'Copy code to clipboard';
+                copyBtn.addEventListener('click', function() {
+                    navigator.clipboard.writeText(rawCode).then(function() {
+                        copyBtn.innerHTML = '✅ Copied!';
+                        copyBtn.classList.add('copied');
+                        if (copyResetTimers.has(copyBtn)) clearTimeout(copyResetTimers.get(copyBtn));
+                        copyResetTimers.set(copyBtn, setTimeout(function() {
+                            copyBtn.innerHTML = '📋 Copy';
+                            copyBtn.classList.remove('copied');
+                        }, COPY_FEEDBACK_DURATION_MS));
+                    });
+                });
+                wrapper.appendChild(copyBtn);
+            });
+        }
+
+        async function loadStep(stepId) {
+            const step = steps.find(s => s.id === stepId) || steps[0];
+            currentIndex = steps.indexOf(step);
+            buildSidebar();
+            updateNavButtons();
+            buildFooterNav();
+
+            const contentEl = document.getElementById('markdownContent');
+            contentEl.innerHTML = '<div class="loading">Loading content</div>';
+            document.title = `${step.title} — Copilot CLI Deep-Dive Workshop`;
+
+            try {
+                const { markdown, usingRawDocs } = await fetchStepMarkdown(step);
+                let md = markdown;
+                md = processMarkdown(md);
+
+                // Fix relative image paths to resolve against the markdown file's directory
+                const stepDir = step.file.substring(0, step.file.lastIndexOf('/') + 1);
+                const assetBase = usingRawDocs ? `${RAW_DOCS_BASE}${stepDir}` : stepDir;
+                // Handle inline-style images: ![alt](./images/foo.png)
+                md = md.replace(/!\[([^\]]*)\]\((?!https?:\/\/|\/\/)([^)]+)\)/g, function(match, alt, path) {
+                    const cleanPath = path.replace(/^\.\//, '');
+                    return `![${alt}](${assetBase}${cleanPath})`;
+                });
+                // Handle reference-style image definitions: [label]: ./images/foo.png
+                md = md.replace(/^(\[[^\]]+\]):\s*((?!https?:\/\/|\/\/)\S+\.(png|jpe?g|gif|svg|webp))([ \t].*)?$/gim, function(match, label, path, ext, title) {
+                    const cleanPath = path.replace(/^\.\//, '');
+                    return `${label}: ${assetBase}${cleanPath}${title || ''}`;
+                });
+
+                let html = marked.parse(md);
+
+                // Enable task list checkboxes
+                const parser = new DOMParser();
+                const parsedDocument = parser.parseFromString(html, 'text/html');
+                const taskListCheckboxSelector = 'li.task-list-item input[type="checkbox"][disabled]';
+                parsedDocument.querySelectorAll(taskListCheckboxSelector).forEach(function(checkbox) {
+                    checkbox.removeAttribute('disabled');
+                });
+                html = parsedDocument.body.innerHTML;
+
+                contentEl.innerHTML = `<div class="markdown">${html}</div>`;
+                enhanceCodeBlocks(contentEl);
+
+                // Fire confetti on last step
+                if (currentIndex === steps.length - 1 && typeof confetti === 'function') {
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                }
+            } catch (err) {
+                contentEl.innerHTML = `
+                    <div class="markdown">
+                        <h1>${step.title}</h1>
+                        <p>Could not load content. Please check the <a href="https://github.com/copilot-dev-days/copilot-cli-deep-dive-workshop" target="_blank">GitHub repository</a> directly.</p>
+                        <p style="color: var(--text-secondary); font-size: 0.875rem;">Error: ${err.message}</p>
+                    </div>`;
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') navigate(-1);
+            if (e.key === 'ArrowRight') navigate(1);
+        });
+
+        // Initialize
+        loadStep(getStepFromURL());
+    </script>
+</body>
+</html>

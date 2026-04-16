@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Copilot CLI — Deep-Dive Workshop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="light-theme.css">
+    <script src="theme-toggle.js"></script>
+</head>
+<body>
+    <div style="position:fixed;top:1rem;right:1rem;z-index:1000;display:flex;gap:0.5rem;align-items:center;">
+        <button class="theme-toggle" onclick="toggleTheme()">☀️ Light</button>
+    </div>
+    <section class="hero">
+        <div class="container">
+            <div class="hero-badge">💻 Terminal + AI-Powered Development</div>
+            <h1>GitHub Copilot CLI<br>Deep-Dive Workshop</h1>
+            <p class="hero-subtitle">From first install to advanced automation — master operating modes, custom instructions, MCP servers, agent skills, plugins, custom agents, hooks, context management, and more through hands-on exercises.</p>
+            <div class="hero-cta">
+                <a href="step.html?step=index" class="btn btn-primary">🚀 Start Workshop</a>
+                <a href="https://github.com/copilot-dev-days/copilot-cli-deep-dive-workshop" class="btn btn-secondary" target="_blank">⭐ GitHub Repo</a>
+            </div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">~4.5h</div>
+                    <div class="stat-label">Duration</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">13</div>
+                    <div class="stat-label">Modules</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">v1.0.16</div>
+                    <div class="stat-label">Copilot CLI</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="container">
+            <h2 class="section-title">What You'll Learn</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Operating Modes</h3>
+                    <p>Interactive chat, slash commands, programmatic mode, and delegate — master every way to use Copilot CLI.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h3>Custom Instructions</h3>
+                    <p>AGENTS.md, llm.txt, and copilot-instructions.md to guide Copilot's behavior and coding style.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔌</div>
+                    <h3>MCP Servers & Tools</h3>
+                    <p>Connect to GitHub MCP, configure local/remote servers, and manage tool permissions effectively.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>Agents & Skills</h3>
+                    <p>Build custom agents, create reusable skills, and leverage the plugin ecosystem.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🪝</div>
+                    <h3>Hooks & Automation</h3>
+                    <p>Lifecycle hooks, autopilot mode, and fleet command for parallel multi-agent workflows.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚙️</div>
+                    <h3>Configuration</h3>
+                    <p>Context management, session handling, IDE integration, accessibility, and team standardization.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="parts">
+        <div class="container">
+            <h2 class="section-title">Workshop Modules</h2>
+            <div class="parts-list">
+                <a href="step.html?step=index" class="part-card">
+                    <div class="part-number">📚</div>
+                    <div class="part-content">
+                        <h3>Workshop Overview</h3>
+                        <p>Introduction, prerequisites, and learning objectives</p>
+                    </div>
+                    <span class="part-time">5 min</span>
+                </a>
+                <a href="step.html?step=01-installation" class="part-card">
+                    <div class="part-number">01</div>
+                    <div class="part-content">
+                        <h3>Installation</h3>
+                        <p>Install via npm, Homebrew, or script</p>
+                    </div>
+                    <span class="part-time">15 min</span>
+                </a>
+                <a href="step.html?step=02-modes" class="part-card">
+                    <div class="part-number">02</div>
+                    <div class="part-content">
+                        <h3>Operating Modes & Commands</h3>
+                        <p>Interactive chat, slash commands, programmatic, and /delegate</p>
+                    </div>
+                    <span class="part-time">30 min</span>
+                </a>
+                <a href="step.html?step=03-instructions" class="part-card">
+                    <div class="part-number">03</div>
+                    <div class="part-content">
+                        <h3>Custom Instructions</h3>
+                        <p>AGENTS.md, llm.txt, copilot-instructions.md</p>
+                    </div>
+                    <span class="part-time">25 min</span>
+                </a>
+                <a href="step.html?step=04-tools" class="part-card">
+                    <div class="part-number">04</div>
+                    <div class="part-content">
+                        <h3>Tools & Permissions</h3>
+                        <p>Built-in tools, allow/deny, --yolo mode</p>
+                    </div>
+                    <span class="part-time">20 min</span>
+                </a>
+                <a href="step.html?step=05-mcps" class="part-card">
+                    <div class="part-number">05</div>
+                    <div class="part-content">
+                        <h3>MCP Servers</h3>
+                        <p>Configure remote and local MCP servers</p>
+                    </div>
+                    <span class="part-time">25 min</span>
+                </a>
+                <a href="step.html?step=06-skills" class="part-card">
+                    <div class="part-number">06</div>
+                    <div class="part-content">
+                        <h3>Agent Skills</h3>
+                        <p>Create and use skills, agentskills.io</p>
+                    </div>
+                    <span class="part-time">20 min</span>
+                </a>
+                <a href="step.html?step=07-plugins" class="part-card">
+                    <div class="part-number">07</div>
+                    <div class="part-content">
+                        <h3>Plugins</h3>
+                        <p>Plugins and the marketplace ecosystem</p>
+                    </div>
+                    <span class="part-time">15 min</span>
+                </a>
+                <a href="step.html?step=08-custom-agents" class="part-card">
+                    <div class="part-number">08</div>
+                    <div class="part-content">
+                        <h3>Custom Agents</h3>
+                        <p>Build specialized agents and subagents</p>
+                    </div>
+                    <span class="part-time">25 min</span>
+                </a>
+                <a href="step.html?step=09-hooks" class="part-card">
+                    <div class="part-number">09</div>
+                    <div class="part-content">
+                        <h3>Hooks</h3>
+                        <p>Lifecycle hooks and automation</p>
+                    </div>
+                    <span class="part-time">20 min</span>
+                </a>
+                <a href="step.html?step=10-context" class="part-card">
+                    <div class="part-number">10</div>
+                    <div class="part-content">
+                        <h3>Context Management</h3>
+                        <p>/context, /compact, token optimization</p>
+                    </div>
+                    <span class="part-time">15 min</span>
+                </a>
+                <a href="step.html?step=11-sessions" class="part-card">
+                    <div class="part-number">11</div>
+                    <div class="part-content">
+                        <h3>Session Management</h3>
+                        <p>Continue, resume, clear, and track sessions</p>
+                    </div>
+                    <span class="part-time">15 min</span>
+                </a>
+                <a href="step.html?step=12-advanced" class="part-card">
+                    <div class="part-number">12</div>
+                    <div class="part-content">
+                        <h3>Advanced Topics</h3>
+                        <p>Autopilot, Fleet, environment, CI/CD, LSP config</p>
+                    </div>
+                    <span class="part-time">30 min</span>
+                </a>
+                <a href="step.html?step=13-configuration" class="part-card">
+                    <div class="part-number">13</div>
+                    <div class="part-content">
+                        <h3>Configuration & Environment</h3>
+                        <p>Config options, env vars, IDE integration, accessibility</p>
+                    </div>
+                    <span class="part-time">20 min</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="prereqs">
+        <div class="container">
+            <h2 class="section-title">Prerequisites</h2>
+            <div class="prereqs-grid">
+                <div class="prereq-item">
+                    <span class="prereq-check">✓</span>
+                    <span>GitHub Copilot subscription</span>
+                </div>
+                <div class="prereq-item">
+                    <span class="prereq-check">✓</span>
+                    <span>Node.js v22+ / npm v10+</span>
+                </div>
+                <div class="prereq-item">
+                    <span class="prereq-check">✓</span>
+                    <span>VS Code or Terminal</span>
+                </div>
+                <div class="prereq-item">
+                    <span class="prereq-check">✓</span>
+                    <span>Git installed</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="https://github.com/copilot-dev-days/copilot-cli-deep-dive-workshop" target="_blank">GitHub Repository</a>
+                <a href="https://docs.github.com/copilot" target="_blank">Copilot Docs</a>
+                <a href="https://github.com/github/awesome-copilot" target="_blank">Awesome Copilot</a>
+            </div>
+            <p class="footer-credit">Built with 💜 by the GitHub Copilot Team</p>
+        </div>
+    </footer>
+</body>
+</html>
