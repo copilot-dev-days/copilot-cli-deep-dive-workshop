@@ -39,7 +39,7 @@ Context is everything Copilot "remembers" during a session:
 
 ### Token Limits
 
-> ⚠️ **FEEDBACK**: The model names and token limits below are **illustrative examples**. Actual available models change over time — run `/model` in your session to see the current list.
+> The model names and token limits below are **illustrative examples**. Actual available models change over time — run `/model` in your session to see the current list.
 
 | Model (example) | Approximate Limit |
 |-------|-------------------|
@@ -47,9 +47,6 @@ Context is everything Copilot "remembers" during a session:
 | GPT-5.2 | ~128K tokens |
 | Claude Sonnet 4.6 | ~200K tokens |
 | Claude Opus 4.6 | ~200K tokens |
-
-> [!NOTE]
-> **Model auto-migration:** Users previously on older models are automatically migrated to the current default model on startup.
 
 > [!NOTE]
 > Use `/model` to select a model and `/context` to see context window usage. The model list changes frequently; available models at the time of writing include: claude-sonnet-4.6, claude-opus-4.6, claude-opus-4.6-fast, gpt-5.4, gpt-5.2, gpt-4.1, and others.
@@ -71,7 +68,7 @@ When you start typing a file path after `@`, matching paths are displayed below 
 
 #### Expanded `@` Paths
 
-> Since v1.0.5, `@` file mentions support paths outside the project:
+> `@` file mentions support paths outside the project:
 
 | Syntax | Example | Description |
 | --- | --- | --- |
@@ -525,8 +522,8 @@ Systematic workflow keeps context under control.
 - ✅ Use `#<number>` to pull GitHub issues, PRs, or discussions into context
 - ✅ Efficient prompting extends useful session length
 - ✅ Explore agent preserves main context
-- ✅ `@` file mentions support absolute, home, and parent paths (v1.0.5+)
-- ✅ Reasoning token usage shown in per-model breakdown via `/usage` (v1.0.17+)
+- ✅ `@` file mentions support absolute, home, and parent paths
+- ✅ Reasoning token usage shown in per-model breakdown via `/usage`
 
 ## Next Steps
 
@@ -535,4 +532,3 @@ Systematic workflow keeps context under control.
 ## References
 
 - [Use Copilot CLI - GitHub Docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli#context-management)
-- [Context Management Changelog](https://github.blog/changelog/2026-01-14-github-copilot-cli-enhanced-agents-context-management-and-new-ways-to-install/)

@@ -53,7 +53,7 @@ style: |
   }
 ---
 
-# Module 3: Session Management
+# Module 11: Session Management
 
 ### GitHub Copilot CLI Workshop
 
@@ -127,13 +127,6 @@ Copilot can only access directories you've allowed
 | Context getting full | `/compact` first |
 | Sensitive info discussed | `/clear` + `/exit` |
 | Session becoming slow | `/clear` |
-
----
-
-## New in v1.0.17–v1.0.27
-
-- **`/share html`** — Shows `file://` URL and `Ctrl+X O` to open in browser
-- **Remote control sessions** — `--remote` or `/remote` for observing/controlling sessions
 
 ---
 

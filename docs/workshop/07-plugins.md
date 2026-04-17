@@ -45,7 +45,7 @@ Plugins extend Copilot's capabilities beyond built-in features:
 
 ### Extensions (Experimental)
 
-> ⚠️ **FEEDBACK**: Extensions are an experimental feature available since **v1.0.3**. API and behavior may change.
+> Extensions are an experimental feature. API and behavior may change.
 
 Extensions let Copilot write custom tools and hooks for itself at runtime using `@github/copilot-sdk`. Unlike plugins (pre-packaged integrations), extensions are generated on-the-fly during a session.
 
@@ -55,14 +55,14 @@ Extensions let Copilot write custom tools and hooks for itself at runtime using 
 ```
 
 Key capabilities:
-- Extensions can be CommonJS modules (`.cjs`) since v1.0.4
-- Extension tools integrate with the permissions system (v1.0.6)
+- Extensions can be CommonJS modules (`.cjs`)
+- Extension tools integrate with the permissions system
 - Use `skipPermission` per-tool to bypass permission prompts for trusted extension tools
 - The loaded extensions count is shown in the "Environment loaded" startup message
 
 ### Open Plugins Spec
 
-> Since v1.0.6, Copilot CLI supports the [Open Plugins specification](https://github.com/nichochar/open-plugins-spec):
+> Copilot CLI supports the [Open Plugins specification](https://github.com/nichochar/open-plugins-spec):
 > - `.lsp.json` plugin manifest files
 > - PascalCase hook event names
 > - `exclusive` path mode
@@ -79,15 +79,15 @@ Key capabilities:
 5. **Custom plugins** - Your own integrations
 6. **Remote sources** - GitHub repos and git URLs referenced in `marketplace.json`
 
-### Plugin Catalog Refresh (v1.0.17+)
+### Plugin Catalog Refresh
 
 > Use `copilot plugin marketplace update` to refresh plugin catalogs from all configured marketplaces. This downloads the latest plugin listings without reinstalling any plugins.
 
-### Plugin Hooks and Environment (v1.0.17+)
+### Plugin Hooks and Environment
 
 > Plugins hooks now receive `PLUGIN_ROOT` environment variables, pointing to the plugin's installation directory. This allows hook scripts to reference files within the plugin package without hardcoding paths.
 
-### Post-Install Messages (v1.0.17+)
+### Post-Install Messages
 
 > Plugins can now declare a post-install message in their manifest. After `/plugin install` completes, the message is displayed to the user — useful for setup instructions, configuration requirements, or usage tips.
 
@@ -572,12 +572,12 @@ copilot --plugin-dir ./plugin-a --plugin-dir ./plugin-b
 - ✅ `owner/repo:path` installs from repository subdirectories
 - ✅ `/plugin install` and `/plugin marketplace add` now support local paths with spaces
 - ✅ `/plugin install` hot-loads agents and skills — no CLI restart needed
-- ✅ Extensions (experimental) — runtime tools via `@github/copilot-sdk` (v1.0.3+)
-- ✅ `/extensions` command to view, enable, and disable extensions (v1.0.5+)
-- ✅ Open Plugins spec support for cross-platform compatibility (v1.0.6+)
-- ✅ `copilot plugin marketplace update` refreshes plugin catalogs (v1.0.17+)
-- ✅ Plugin hooks receive `PLUGIN_ROOT` env vars (v1.0.17+)
-- ✅ Plugins display post-install messages after `/plugin install` (v1.0.17+)
+- ✅ Extensions (experimental) — runtime tools via `@github/copilot-sdk`
+- ✅ `/extensions` command to view, enable, and disable extensions
+- ✅ Open Plugins spec support for cross-platform compatibility
+- ✅ `copilot plugin marketplace update` refreshes plugin catalogs
+- ✅ Plugin hooks receive `PLUGIN_ROOT` env vars
+- ✅ Plugins display post-install messages after `/plugin install`
 
 > [!NOTE]
 > Local paths with spaces are supported in marketplace source configurations.

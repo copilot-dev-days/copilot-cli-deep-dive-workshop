@@ -82,7 +82,7 @@ Slash commands are prefixed with `/` and provide quick access to CLI features wi
 - Press `ctrl+x` then `/` to run a command via keyboard shortcut
 - Commands are tab-completable — start typing `/` followed by the first letters
 
-#### Status Bar Hints (v1.0.27+)
+#### Status Bar Hints
 
 > While typing, the status bar shows contextual hints:
 > - `@files` and `#issues` hints appear while composing prompts
@@ -199,16 +199,16 @@ Some commands are covered in depth in later modules (`/mcp` in Module 5, `/skill
 | `/share html` | Export session as a self-contained interactive HTML file |
 | `/mcp auth` | Re-authenticate MCP OAuth servers with account switching support |
 
-#### New Commands (v1.0.17–v1.0.27)
+#### New Commands
 
 | Command | Description |
 | --- | --- |
 | `/ask [prompt]` | Ask a quick question without affecting conversation history — response is not added to context |
 | `/env` | Show loaded environment details — lists active instructions, MCPs, skills, and plugins |
-| `/remote` | Start or manage a remote control session (renamed from "steering") |
-| `/diff`, `/agent`, `/feedback`, `/ide`, `/tuikit` | These commands now work while the agent is running — no need to wait for completion |
+| `/remote` | Start or manage a remote control session |
+| `/diff`, `/agent`, `/feedback`, `/ide`, `/tuikit` | These commands work while the agent is running — no need to wait for completion |
 
-#### Startup Flags (v1.0.17–v1.0.27)
+#### Startup Flags
 
 | Flag | Description |
 | --- | --- |
@@ -217,9 +217,9 @@ Some commands are covered in depth in later modules (`/mcp` in Module 5, `/skill
 | `--plan` | Start CLI directly in plan mode |
 | `--remote` | Start a remote control session |
 
-> ⚠️ **FEEDBACK**: `/research` and `/chronicle` (experimental) are recent additions. `/chronicle` subcommands (`standup`, `tips`, `improve`) and behavior may change across versions.
+> `/research` and `/chronicle` are experimental. `/chronicle` subcommands (`standup`, `tips`, `improve`) and behavior are subject to change.
 
-> ⚠️ **FEEDBACK**: **Remote control** (v1.0.17+) replaces the former "steering" feature. Use `--remote` flag or `/remote` command to start a remote control session, allowing another Copilot CLI instance to connect and observe/control your session. The terminology "steering" is deprecated.
+> **Remote control** lets you observe and control sessions remotely. Use the `--remote` flag or `/remote` command to start a remote control session, allowing another Copilot CLI instance to connect.
 
 ## Hands-On Exercises
 
@@ -633,15 +633,15 @@ You can choose the appropriate mode for any task.
 - ✅ Tool approval has one-time and session-wide options
 - ✅ Be cautious with session-wide approval for destructive commands
 - ✅ `/restart` hot restarts the CLI while preserving your session
-- ✅ `/ask` asks a quick question without affecting conversation history (v1.0.17+)
-- ✅ `/env` shows loaded environment details (v1.0.17+)
-- ✅ `--mode`, `--autopilot`, `--plan` flags start CLI in a specific mode (v1.0.17+)
-- ✅ `--remote` and `/remote` for remote control sessions (replaces "steering") (v1.0.17+)
-- ✅ `/diff`, `/agent`, `/feedback`, `/ide`, `/tuikit` work while agent is running (v1.0.17+)
-- ✅ `Alt+D` deletes word forward in text input (v1.0.17+)
-- ✅ `ctrl+o` expands all timeline entries (same as `ctrl+e`) (v1.0.17+)
-- ✅ `Ctrl+L` clears terminal screen without clearing session (v1.0.17+)
-- ✅ Status bar shows `@files`, `#issues`, and `/help` hints while typing (v1.0.17+)
+- ✅ `/ask` asks a quick question without affecting conversation history
+- ✅ `/env` shows loaded environment details
+- ✅ `--mode`, `--autopilot`, `--plan` flags start CLI in a specific mode
+- ✅ `--remote` and `/remote` for remote control sessions (replaces "steering")
+- ✅ `/diff`, `/agent`, `/feedback`, `/ide`, `/tuikit` work while agent is running
+- ✅ `Alt+D` deletes word forward in text input
+- ✅ `ctrl+o` expands all timeline entries (same as `ctrl+e`)
+- ✅ `Ctrl+L` clears terminal screen without clearing session
+- ✅ Status bar shows `@files`, `#issues`, and `/help` hints while typing
 - ✅ Branch indicator shows unstaged (*), staged (+), and untracked (%) status
 
 ## Next Steps

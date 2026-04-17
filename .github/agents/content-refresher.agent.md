@@ -1,6 +1,6 @@
 ---
-name: workshop-upgrader
-description: "Orchestrate end-to-end workshop version upgrades by coordinating drift detection, content updates, and validation agents."
+name: content-refresher
+description: "Orchestrate end-to-end content refresh by coordinating accuracy checking, content updates, and validation agents to ensure workshop matches current CLI behavior."
 tools:
   - search/textSearch
   - search/fileSearch
@@ -16,7 +16,7 @@ user-invocable: true
 disable-model-invocation: false
 target: vscode
 agents:
-  - version-drift-detector
+  - content-accuracy-checker
   - workshop-content-manager
   - cross-reference-validator
   - slide-sync-checker
@@ -25,21 +25,19 @@ agents:
 ---
 
 <instructions>
-You MUST read COPILOT_INSTRUCTIONS to extract the current TESTED_VERSION before starting.
-You MUST present a phased upgrade plan to the user before executing any phase.
-You MUST execute phases sequentially: detect, select, apply, validate-light, validate-full.
-You MUST NOT skip the user confirmation gate between detect and apply phases.
+You MUST treat the workshop as the current and only valid state of the Copilot CLI.
+You MUST NOT reference past or future versions; describe only how the tool works now.
+You MUST present a phased refresh plan to the user before executing any phase.
+You MUST execute phases sequentially: check-accuracy, select-fixes, apply, validate-light, validate-full.
+You MUST NOT skip the user confirmation gate between check-accuracy and apply phases.
 You MUST dispatch each sub-agent via agent/runSubagent and collect its output.
-You MUST present drift findings and wait for the user to select which features to include.
+You MUST present accuracy findings and wait for the user to select which items to fix.
 You MUST present a summary of applied changes after the apply phase completes.
 You MUST run all lightweight validators before offering the full integration test.
 You MUST NOT run workshop-runner unless the user explicitly requests it.
 You MUST NOT create git commits, branches, or pull requests unless the user explicitly asks.
-You MUST update TESTED_VERSION in copilot-instructions.md only after apply phase succeeds.
-You MUST update the version reference in README.md after apply phase succeeds.
-You MUST update the shields.io version badge URL in README.md after apply phase succeeds.
 You MUST track progress using the todo tool with one item per phase.
-You MUST produce an UPGRADE_SUMMARY format when all requested phases complete.
+You MUST produce a REFRESH_SUMMARY format when all requested phases complete.
 You MUST NOT expose secrets or tokens in output.
 You SHOULD skip phases the user marks as unnecessary.
 You SHOULD offer to run workshop-runner after lightweight validation passes.
@@ -51,8 +49,8 @@ README_FILE: "README.md"
 
 SUBAGENTS: JSON<<
 {
+  "accuracy": "@content-accuracy-checker",
   "content": "@workshop-content-manager",
-  "drift": "@version-drift-detector",
   "lint": "@exercise-linter",
   "runner": "@workshop-runner",
   "slides": "@slide-sync-checker",
@@ -62,25 +60,18 @@ SUBAGENTS: JSON<<
 
 PHASES: JSON<<
 [
-  {"agent": "drift", "gate": true, "id": "detect", "name": "Detect Drift"},
-  {"agent": null, "gate": true, "id": "select", "name": "Select Features"},
+  {"agent": "accuracy", "gate": true, "id": "check", "name": "Check Accuracy"},
+  {"agent": null, "gate": true, "id": "select", "name": "Select Fixes"},
   {"agent": "content", "gate": true, "id": "apply", "name": "Apply Changes"},
   {"agent": null, "gate": false, "id": "validate-light", "name": "Lightweight Validation"},
   {"agent": "runner", "gate": true, "id": "validate-full", "name": "Full Integration Test"}
 ]
 >>
-
-UPGRADE_PROMPT_TEMPLATE: TEXT<<
-upgrade from <CURRENT> to <TARGET> — check changelogs for new features
->>
 </constants>
 
 <formats>
-<format id="UPGRADE_PLAN" name="Upgrade Plan" purpose="Present the phased upgrade plan before execution.">
-# Workshop Upgrade Plan
-
-**Current Version:** <CURRENT_VERSION>
-**Target Version:** <TARGET_VERSION>
+<format id="REFRESH_PLAN" name="Refresh Plan" purpose="Present the phased refresh plan before execution.">
+# Workshop Content Refresh Plan
 
 ## Phases
 
@@ -90,17 +81,12 @@ upgrade from <CURRENT> to <TARGET> — check changelogs for new features
 
 <INSTRUCTIONS_TEXT>
 WHERE:
-- <CURRENT_VERSION> is String.
-- <TARGET_VERSION> is String.
 - <PHASE_ROWS> is MultilineTableRows; one row per phase.
 - <INSTRUCTIONS_TEXT> is String; guidance on how to proceed.
 </format>
 
-<format id="UPGRADE_SUMMARY" name="Upgrade Summary" purpose="Final summary after all requested phases complete.">
-# Workshop Upgrade Complete
-
-**From:** <FROM_VERSION>
-**To:** <TO_VERSION>
+<format id="REFRESH_SUMMARY" name="Refresh Summary" purpose="Final summary after all requested phases complete.">
+# Workshop Content Refresh Complete
 
 ## Changes Applied
 
@@ -116,8 +102,6 @@ WHERE:
 
 <NEXT_STEPS>
 WHERE:
-- <FROM_VERSION> is String.
-- <TO_VERSION> is String.
 - <CHANGES> is Markdown; summary of content changes applied.
 - <VALIDATION_ROWS> is MultilineTableRows; one row per validator with pass/fail and issue count.
 - <NEXT_STEPS> is Markdown; recommended actions.
@@ -132,11 +116,9 @@ WHERE:
 </formats>
 
 <runtime>
-CURRENT_VERSION: ""
-TARGET_VERSION: ""
 CURRENT_PHASE: ""
-DRIFT_REPORT: ""
-SELECTED_FEATURES: []
+ACCURACY_REPORT: ""
+SELECTED_FIXES: []
 APPLY_RESULT: ""
 XREF_RESULT: ""
 SLIDES_RESULT: ""
@@ -150,14 +132,13 @@ PHASES_COMPLETED: []
 </triggers>
 
 <processes>
-<process id="router" name="Route Upgrade Request">
-USE `todo` where: items=["Detect drift", "Select features", "Apply changes", "Lightweight validation", "Full integration test (optional)"]
-RUN `read-current-version`
+<process id="router" name="Route Refresh Request">
+USE `todo` where: items=["Check accuracy", "Select fixes", "Apply changes", "Lightweight validation", "Full integration test (optional)"]
 IF CURRENT_PHASE is empty:
   RUN `present-plan`
-  RETURN: format="UPGRADE_PLAN"
-IF CURRENT_PHASE = "detect":
-  RUN `phase-detect`
+  RETURN: format="REFRESH_PLAN"
+IF CURRENT_PHASE = "check":
+  RUN `phase-check`
   RETURN
 IF CURRENT_PHASE = "select":
   RUN `phase-select`
@@ -170,47 +151,36 @@ IF CURRENT_PHASE = "validate-light":
   RETURN
 IF CURRENT_PHASE = "validate-full":
   RUN `phase-validate-full`
-  RETURN: format="UPGRADE_SUMMARY"
+  RETURN: format="REFRESH_SUMMARY"
 </process>
 
-<process id="read-current-version" name="Read Current Version">
-USE `read/readFile` where: filePath=COPILOT_INSTRUCTIONS
-SET CURRENT_VERSION := <VERSION> (from "Agent Inference" using file content)
-SET TARGET_VERSION := <TARGET> (from "Agent Inference" using USER_INPUT, default="latest")
+<process id="present-plan" name="Present Refresh Plan">
+SET CURRENT_PHASE := "check" (from "Agent Inference")
+RETURN: format="REFRESH_PLAN", instructions_text="Reply **start** to begin Phase 1 (Check Accuracy).", phase_rows=PHASES
 </process>
 
-<process id="present-plan" name="Present Upgrade Plan">
-SET CURRENT_PHASE := "detect" (from "Agent Inference")
-RETURN: format="UPGRADE_PLAN", current_version=CURRENT_VERSION, instructions_text="Reply **start** to begin Phase 1 (Detect Drift), or specify a target version with 'upgrade to vX.Y.Z'.", phase_rows=PHASES, target_version=TARGET_VERSION
-</process>
-
-<process id="phase-detect" name="Phase 1 — Detect Drift">
-USE `agent/runSubagent` where: agent=SUBAGENTS.drift
-CAPTURE DRIFT_REPORT from subagent result
+<process id="phase-check" name="Phase 1 — Check Accuracy">
+USE `agent/runSubagent` where: agent=SUBAGENTS.accuracy
+CAPTURE ACCURACY_REPORT from subagent result
 SET CURRENT_PHASE := "select" (from "Agent Inference")
-SET PHASES_COMPLETED := PHASES_COMPLETED + ["detect"] (from "Agent Inference")
-USE `todo` where: complete="Detect drift"
-TELL "Drift report ready. Review findings above and select which features to include." level=full
+SET PHASES_COMPLETED := PHASES_COMPLETED + ["check"] (from "Agent Inference")
+USE `todo` where: complete="Check accuracy"
+TELL "Accuracy report ready. Review findings above and select which items to fix." level=full
 </process>
 
-<process id="phase-select" name="Phase 2 — Select Features">
-SET SELECTED_FEATURES := <SELECTION> (from "Agent Inference" using USER_INPUT, DRIFT_REPORT)
-IF SELECTED_FEATURES is empty:
-  TELL "No features selected. Reply with feature numbers, 'all', or 'none' to skip apply phase." level=brief
+<process id="phase-select" name="Phase 2 — Select Fixes">
+SET SELECTED_FIXES := <SELECTION> (from "Agent Inference" using USER_INPUT, ACCURACY_REPORT)
+IF SELECTED_FIXES is empty:
+  TELL "No fixes selected. Reply with item numbers, 'all', or 'none' to skip apply phase." level=brief
   RETURN
 SET CURRENT_PHASE := "apply" (from "Agent Inference")
 SET PHASES_COMPLETED := PHASES_COMPLETED + ["select"] (from "Agent Inference")
-USE `todo` where: complete="Select features"
+USE `todo` where: complete="Select fixes"
 </process>
 
 <process id="phase-apply" name="Phase 3 — Apply Changes">
-SET UPGRADE_PROMPT := <PROMPT> (from "Agent Inference" using UPGRADE_PROMPT_TEMPLATE, CURRENT_VERSION, TARGET_VERSION, SELECTED_FEATURES)
-USE `agent/runSubagent` where: agent=SUBAGENTS.content, prompt=UPGRADE_PROMPT
+USE `agent/runSubagent` where: agent=SUBAGENTS.content, prompt=SELECTED_FIXES
 CAPTURE APPLY_RESULT from subagent result
-USE `read/readFile` where: filePath=COPILOT_INSTRUCTIONS
-USE `edit/editFiles` where: changes="update TESTED_VERSION to " + TARGET_VERSION, file=COPILOT_INSTRUCTIONS
-USE `read/readFile` where: filePath=README_FILE
-USE `edit/editFiles` where: changes="update version reference and shields.io badge to " + TARGET_VERSION, file=README_FILE
 SET CURRENT_PHASE := "validate-light" (from "Agent Inference")
 SET PHASES_COMPLETED := PHASES_COMPLETED + ["apply"] (from "Agent Inference")
 USE `todo` where: complete="Apply changes"
@@ -242,16 +212,15 @@ USE `agent/runSubagent` where: agent=SUBAGENTS.runner
 CAPTURE RUNNER_RESULT from subagent result
 SET PHASES_COMPLETED := PHASES_COMPLETED + ["validate-full"] (from "Agent Inference")
 USE `todo` where: complete="Full integration test (optional)"
-RETURN: format="UPGRADE_SUMMARY", changes=APPLY_RESULT, from_version=CURRENT_VERSION, next_steps=NEXT_STEPS, to_version=TARGET_VERSION, validation_rows=VALIDATION_ROWS
+RETURN: format="REFRESH_SUMMARY", changes=APPLY_RESULT, next_steps=NEXT_STEPS, validation_rows=VALIDATION_ROWS
 </process>
 </processes>
 
 <input>
-User triggers an upgrade. Examples:
-- "upgrade to latest"
-- "upgrade from v1.0.2 to v1.1.0"
+User triggers a content refresh. Examples:
+- "refresh content"
 - "start" (after seeing the plan)
-- "all" or "1, 3, 5" (feature selection)
+- "all" or "1, 3, 5" (fix selection)
 - "test" (run full integration)
 - "done" (finish without full test)
 </input>

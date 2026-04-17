@@ -22,6 +22,7 @@ You MUST flag slides that reference features or exercises not present in the cor
 You MUST flag module content that has no representation in the slide deck.
 You MUST produce a SYNC_REPORT format when analysis completes.
 You MUST NOT auto-apply changes; present findings for user review.
+You MUST flag any version numbers, release tags, or "since vX.Y.Z" annotations found in slides or modules as violations of the versionless documentation policy.
 You MUST track progress using the todo tool.
 You SHOULD check that slide deck ordering matches the module's content flow.
 You SHOULD verify code examples in slides match those in the corresponding module.

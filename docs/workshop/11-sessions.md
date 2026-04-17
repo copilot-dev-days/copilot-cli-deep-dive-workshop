@@ -400,8 +400,8 @@ Session transcript saved for future reference or sharing.
 - ✅ `/cwd` and `/add-dir` control file access scope; `/cwd` sets the working directory per session
 - ✅ Run multiple sessions in different terminals
 - ✅ Export sessions with `--share` for documentation or `/share html` for interactive HTML
-- ✅ `/share html` shows `file://` URL and `Ctrl+X O` shortcut to open in browser (v1.0.17+)
-- ✅ Remote control sessions via `--remote` or `/remote` — observe/control sessions remotely (v1.0.17+)
+- ✅ `/share html` shows `file://` URL and `Ctrl+X O` shortcut to open in browser
+- ✅ Remote control sessions via `--remote` or `/remote` — observe/control sessions remotely
 
 ## Next Steps
 

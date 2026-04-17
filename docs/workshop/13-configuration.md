@@ -25,7 +25,7 @@ Copilot CLI stores its configuration at ~/.copilot/config.json (or the directory
 copilot --config-dir /path/to/custom/config
 ```
 
-> **Note (v1.0.17+):** The `--config-dir` flag is now respected for model selection — when you specify a custom config directory, the model preference stored in that directory's config.json is used instead of the default.
+> **Note:** The `--config-dir` flag is respected for model selection — when you specify a custom config directory, the model preference stored in that directory's config.json is used instead of the default.
 
 ### Configuration Options Reference
 
@@ -128,7 +128,7 @@ All options below are set in ~/.copilot/config.json:
 | `--reasoning-effort <level>` | Set reasoning effort level for model |
 | `--binary-version` | Query CLI binary version without launching |
 
-### The `/env` Command (v1.0.17+)
+### The `/env` Command
 
 Use `/env` inside an interactive session to see a comprehensive view of the loaded environment:
 
@@ -143,7 +143,7 @@ This displays:
 - Installed plugins
 - Current model and configuration directory
 
-### The `copilot help monitoring` Topic (v1.0.17+)
+### The `copilot help monitoring` Topic
 
 ```bash
 copilot help monitoring
@@ -461,11 +461,11 @@ You can enable detailed logging and understand the log directory structure.
 - ✅ `--log-dir` and `--log-level` enable debugging
 - ✅ `--screen-reader`, `--no-color`, `--plain-diff` for accessibility
 - ✅ Proxy support via `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` environment variables
-- ✅ `--reasoning-effort` flag controls model reasoning level (v1.0.4+)
-- ✅ `--binary-version` checks installed version without launching (v1.0.3+)
-- ✅ `/env` command shows loaded environment details (v1.0.17+)
-- ✅ `--config-dir` respected for model selection (v1.0.17+)
-- ✅ `copilot help monitoring` documents OpenTelemetry configuration (v1.0.17+)
+- ✅ `--reasoning-effort` flag controls model reasoning level
+- ✅ `--binary-version` checks installed version without launching
+- ✅ `/env` command shows loaded environment details
+- ✅ `--config-dir` respected for model selection
+- ✅ `copilot help monitoring` documents OpenTelemetry configuration
 
 ## Workshop Complete! 🎉
 

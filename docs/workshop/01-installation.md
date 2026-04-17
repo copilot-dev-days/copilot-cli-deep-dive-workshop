@@ -17,7 +17,7 @@
 ## Concepts
 
 > [!NOTE]
-> 🎉 **Generally Available** — GitHub Copilot CLI is now at **v1.0.x**. No preview or beta opt-in is required.
+> 🎉 **Generally Available** — GitHub Copilot CLI is generally available. No preview or beta opt-in is required.
 
 ### Subscription Requirements
 
@@ -51,7 +51,7 @@ Copilot CLI supports multiple installation methods:
 > copilot update
 > ```
 >
-> `copilot update` replaces the full binary executable, not just the JS package .
+> `copilot update` replaces the full binary executable, not just the JS package.
 
 ### Version & Changelog Commands
 
@@ -68,7 +68,6 @@ Inside an interactive session, use these commands:
 | `/version` | Display CLI version and check for updates |
 | `/changelog` | View the latest release changelog |
 | `/changelog last 5` | Show the last 5 release changelogs |
-| `/changelog since v1.0.3` | Show changelogs since a specific version |
 | `/changelog summarize` | Get an AI-generated summary of recent changes |
 
 ## Hands-On Exercises
@@ -102,7 +101,7 @@ Inside an interactive session, use these commands:
 **Expected Outcome:**
 
 ```
-GitHub Copilot CLI 1.0.7
+GitHub Copilot CLI <version>
 ```
 
 > **Note:** The exact version number will reflect whichever release is current when you install. The format is the same regardless of installation method.
@@ -146,7 +145,7 @@ GitHub Copilot CLI 1.0.7
 **Expected Outcome:**
 
 ```
-GitHub Copilot CLI 1.0.7
+GitHub Copilot CLI <version>
 ```
 
 ### Exercise 1c: Install via Homebrew (macOS/Linux) option
@@ -176,7 +175,7 @@ GitHub Copilot CLI 1.0.7
 **Expected Outcome:**
 
 ```
-GitHub Copilot CLI 1.0.7
+GitHub Copilot CLI <version>
 ```
 
 ### Exercise 1d: Windows Installation (WinGet)
@@ -204,7 +203,7 @@ GitHub Copilot CLI 1.0.7
 **Expected Outcome:**
 
 ```
-GitHub Copilot CLI 1.0.7
+GitHub Copilot CLI <version>
 ```
 
 ### Exercise 2: Authenticate with GitHub

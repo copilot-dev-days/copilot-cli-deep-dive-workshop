@@ -173,24 +173,6 @@ Distribute via shared config templates in your repo.
 
 ---
 
-## New Config & Flags (v1.0.3–v1.0.27)
-
-| Feature | Details |
-|---------|---------|
-
-| `--reasoning-effort` | Control model reasoning level (v1.0.4) |
-| `--effort` | Shorthand for `--reasoning-effort` (v1.0.10) |
-| `--binary-version` | Check version without launching (v1.0.3) |
-| `GH_HOST` | Override GitHub API hostname |
-| `HTTP_PROXY` / `HTTPS_PROXY` | Proxy support |
-| `NO_PROXY` | Bypass proxy for specific hosts |
-| camelCase config | All config keys now prefer camelCase (v1.0.10+) |
-| `/env` command | Show loaded environment details (v1.0.17+) |
-| `--config-dir` | Respected for model selection (v1.0.17+) |
-| `copilot help monitoring` | OpenTelemetry config docs (v1.0.17+) |
-
----
-
 ## Your Turn!
 
 ### Recommended exercises from Module 13:

@@ -53,7 +53,7 @@ style: |
   }
 ---
 
-# Module 7: Agent Skills
+# Module 6: Agent Skills
 
 ### GitHub Copilot CLI Workshop
 
@@ -119,14 +119,6 @@ description: Generates API documentation from source code
 **Project skills** take priority over **personal skills**
 
 > Community skills available at [agentskills.io](https://agentskills.io)
-
----
-
-## New in v1.0.17–v1.0.27
-
-- **Built-in skills** — CLI ships with skills always available without configuration
-- Built-in skills appear in `/skills` output alongside project/personal skills
-- Override built-in skills by creating project/personal skills with the same name
 
 ---
 

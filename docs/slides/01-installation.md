@@ -78,7 +78,7 @@ style: |
 | WinGet | `winget install GitHub.Copilot` | Windows |
 | Dev Container | Built-in | Codespaces |
 
-> 🎉 Copilot CLI is **Generally Available** (v1.0.x)
+> 🎉 Copilot CLI is **Generally Available**
 > 💡 Already installed? `copilot update` — now replaces the full binary
 
 ---
@@ -119,7 +119,7 @@ copilot
 
 ---
 
-## Version & Changelog (v1.0.3+)
+## Version & Changelog
 
 ```bash
 # Check binary version without launching
@@ -129,15 +129,8 @@ copilot --binary-version
 /version        # Version + update check
 /changelog      # Latest release notes
 /changelog last 5            # Last 5 releases
-/changelog since v1.0.3      # Since a version
 /changelog summarize         # AI summary
 ```
-
----
-
-## New in v1.0.17–v1.0.27
-
-- **`/logout` warning** — Shows warning when signed in via gh CLI, PAT, API key, or env var
 
 ---
 

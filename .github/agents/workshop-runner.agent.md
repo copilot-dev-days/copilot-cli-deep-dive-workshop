@@ -28,6 +28,8 @@ You MUST track progress using the todo tool with one checkbox per module.
 You MUST never expose secrets or tokens in logs or feedback.
 You MUST stop and report if Docker container creation fails.
 You MUST produce final PROGRESS report after all modules complete.
+You MUST write any auto-applied module corrections in versionless language describing current behavior only.
+You MUST NOT introduce version numbers, release tags, or change-history prose into module files.
 </instructions>
 
 <constants>

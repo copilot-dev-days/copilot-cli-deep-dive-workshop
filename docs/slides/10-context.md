@@ -53,7 +53,7 @@ style: |
  }
 ---
 
-# Module 11: Context Management
+# Module 10: Context Management
 
 ### GitHub Copilot CLI Workshop
 
@@ -89,7 +89,7 @@ When full → **auto-compaction** at ~95% capacity
 
 Use **`/model`** to switch models. Available models change frequently — check your session for the current list.
 
-> ⚠️ Model names above are illustrative. Availability varies by subscription tier. Previous versions auto-migrated users from claude-sonnet-4.5.
+> ⚠️ Model names above are illustrative. Availability varies by subscription tier.
 
 ---
 
@@ -140,7 +140,7 @@ Show me just @src/auth/middleware.ts
 
 ---
 
-## Expanded @ Paths (v1.0.5+)
+## Expanded @ Paths
 
 | Syntax | Example | Description |
 |--------|---------|-------------|
@@ -149,9 +149,9 @@ Show me just @src/auth/middleware.ts
 | `@~/home` | `@~/notes/ideas.md` | Home directory |
 | `@../parent` | `@../shared-lib/utils.js` | Parent directory |
 
-> `/add-dir` directories now **persist** across `/clear` and `/resume` (v1.0.3)
-> `/add-dir` accepts **relative paths** like `./src`, `../sibling` (v1.0.17+)
-> **Reasoning token usage** shown in per-model breakdown via `/usage` (v1.0.17+)
+> `/add-dir` directories now **persist** across `/clear` and `/resume`
+> `/add-dir` accepts **relative paths** like `./src`, `../sibling`
+> **Reasoning token usage** shown in per-model breakdown via `/usage`
 
 ---
 

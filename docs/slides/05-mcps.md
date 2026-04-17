@@ -53,7 +53,7 @@ style: |
  }
 ---
 
-# Module 6: MCP Servers
+# Module 5: MCP Servers
 
 ### GitHub Copilot CLI Workshop
 
@@ -181,7 +181,7 @@ copilot --disable-mcp-server "my-server"
 
 ---
 
-## DevContainer MCP Config (v1.0.3+)
+## DevContainer MCP Config
 
 MCP servers can be pre-configured in `.devcontainer/devcontainer.json`:
 
@@ -202,17 +202,6 @@ MCP servers can be pre-configured in `.devcontainer/devcontainer.json`:
 ```
 
 Merged with personal `~/.copilot/mcp-config.json` automatically
-
----
-
-## New in v1.0.17–v1.0.27
-
-- ⚠️ **BREAKING**: `.vscode/mcp.json` removed — use `.mcp.json` instead
-- **`/mcp install`** — Install from MCP registry with guided config
-- **`copilot mcp`** — Manage MCP servers from CLI (list, add, remove, show)
-- **Auto-retry** — Remote servers retry on transient network failures
-- **`/mcp enable`/`disable` persist** across sessions
-- **OAuth HTTPS redirect** via self-signed cert fallback
 
 ---
 

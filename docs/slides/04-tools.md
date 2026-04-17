@@ -53,7 +53,7 @@ style: |
  }
 ---
 
-# Module 5: Tools & Permissions
+# Module 4: Tools & Permissions
 
 ### GitHub Copilot CLI Workshop
 
@@ -86,7 +86,7 @@ Three choices when Copilot wants to use a tool:
 
 > Use `/reset-allowed-tools` to clear session approvals
 
-> ⚠️ Undo operations now always require confirmation — they no longer auto-apply
+> ⚠️ Undo operations always require confirmation before applying
 
 ---
 
@@ -146,16 +146,6 @@ copilot --secret-env-vars MY_API_KEY
 # Fully autonomous (no questions)
 copilot --no-ask-user --allow-all-tools
 ```
-
----
-
-## New in v1.0.4–v1.0.27
-
-- **One-time path approval** — grant path access for current session only, without modifying config (v1.0.4)
-- **Dynamic tool search** — Claude models discover and use tools automatically (v1.0.6)
-- **`/reset-allowed-tools`** now fully undoes `/allow-all` (v1.0.3)
-- **`/add-dir` relative paths** — accepts `./src`, `../sibling` (v1.0.17+)
-- **`/yolo` persists** across `/restart`; `/yolo` and `--yolo` behave identically (v1.0.17+)
 
 ---
 

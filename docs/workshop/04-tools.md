@@ -53,15 +53,15 @@ Every potentially destructive action requires approval:
 2. **Session-wide** - Approve this tool for the entire session
 3. **Deny** - Reject and provide alternative guidance
 
-> ⚠️ **FEEDBACK** — Undo operations now always require user confirmation before applying — they no longer auto-apply. This safety improvement prevents accidental reversions.
+> Undo operations always require user confirmation before applying — they do not auto-apply. This safety measure prevents accidental reversions.
 
 ### Path Permission Approval
 
-> Since v1.0.4, the path permission dialog offers a **one-time approval** option in addition to permanently adding the path to the allowed list. This lets you grant access for the current session without modifying your persistent configuration.
+> The path permission dialog offers a **one-time approval** option in addition to permanently adding the path to the allowed list. This lets you grant access for the current session without modifying your persistent configuration.
 
 ### Tool Search
 
-> Since v1.0.6, Claude models can **discover and use tools dynamically** with tool search. The model can find relevant tools without you explicitly specifying them, reducing the need for manual `--allow-tool` flags in some workflows.
+> Claude models can **discover and use tools dynamically** with tool search. The model can find relevant tools without you explicitly specifying them, reducing the need for manual `--allow-tool` flags in some workflows.
 
 ## Hands-On Exercises
 
@@ -519,7 +519,7 @@ copilot -p "Fix all linting errors" --allow-all-tools --no-ask-user
 | `--yolo` | `--allow-all-tools --allow-all-paths --allow-all-urls` |
 | `--allow-all` | Same as `--yolo` |
 
-> **Note (v1.0.17+):** `/yolo` and `--yolo` now behave identically. When you toggle `/yolo` in an interactive session, the YOLO state persists across `/restart` — you don't need to re-enable it after a hot restart.
+> **Note:** `/yolo` and `--yolo` now behave identically. When you toggle `/yolo` in an interactive session, the YOLO state persists across `/restart` — you don't need to re-enable it after a hot restart.
 | `--allow-url` | Allow specific URLs/domains |
 | `--deny-url` | Deny specific URLs/domains (takes precedence) |
 | `--allow-all-urls` | Allow all URLs without confirmation |
@@ -551,10 +551,10 @@ copilot -p "Fix all linting errors" --allow-all-tools --no-ask-user
 - ✅ `url` pattern enables tool-level URL matching
 - ✅ `--secret-env-vars` protects sensitive values from leaking
 - ✅ `--no-ask-user` enables fully autonomous operation
-- ✅ Path permission dialog offers one-time approval (v1.0.4+)
-- ✅ Claude models support dynamic tool search (v1.0.6+)
-- ✅ `/add-dir` accepts relative paths like `./src` and `../sibling` (v1.0.17+)
-- ✅ `/yolo` state persists across `/restart`; `/yolo` and `--yolo` behave identically (v1.0.17+)
+- ✅ Path permission dialog offers one-time approval
+- ✅ Claude models support dynamic tool search
+- ✅ `/add-dir` accepts relative paths like `./src` and `../sibling`
+- ✅ `/yolo` state persists across `/restart`; `/yolo` and `--yolo` behave identically
 
 ## Next Steps
 
