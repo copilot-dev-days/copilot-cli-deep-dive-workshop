@@ -53,7 +53,7 @@ style: |
   }
 ---
 
-# Module 3: Session Management
+# Module 11: Session Management
 
 ### GitHub Copilot CLI Workshop
 

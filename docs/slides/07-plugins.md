@@ -53,7 +53,7 @@ style: |
  }
 ---
 
-# Module 8: Plugins
+# Module 7: Plugins
 
 ### GitHub Copilot CLI Workshop
 
@@ -157,14 +157,17 @@ copilot --allow-tool 'plugin-name' --deny-tool 'shell(rm)'
 
 ---
 
-## Extensions & Open Plugins (v1.0.3+)
+## Extensions & Open Plugins
 
 - **Extensions** (experimental) — Copilot writes custom tools at runtime via `@github/copilot-sdk`
-- **`/extensions`** command to view, enable, disable extensions (v1.0.5)
-- Extension tools integrate with **permissions system** (`skipPermission` per-tool) (v1.0.6)
-- **Open Plugins spec** support (v1.0.6):
+- **`/extensions`** command to view, enable, disable extensions
+- Extension tools integrate with **permissions system** (`skipPermission` per-tool)
+- **Open Plugins spec** support:
   - `.lsp.json` manifests, PascalCase events, `exclusive` path mode
   - Cross-platform compatibility with VS Code and Claude Code
+- **`copilot plugin marketplace update`** — Refresh catalogs
+- **`PLUGIN_ROOT` env vars** in plugin hooks
+- **Post-install messages** displayed after `/plugin install`
 
 ---
 

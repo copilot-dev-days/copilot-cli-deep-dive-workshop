@@ -53,7 +53,7 @@ style: |
   }
 ---
 
-# Module 7: Agent Skills
+# Module 6: Agent Skills
 
 ### GitHub Copilot CLI Workshop
 

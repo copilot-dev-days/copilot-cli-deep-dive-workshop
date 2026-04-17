@@ -40,6 +40,7 @@ User Prompt → Session Start → Pre-Tool → Tool Execution → Post-Tool → 
 | `preCompact` | Before context compaction | Pre-compaction tasks, state saving |
 | `subagentStart` | Sub-agent is spawned | Context injection, logging |
 | `permissionRequest` | Tool permission requested | Programmatic approve/deny of tool permissions |
+| `notification` | Shell completion, permission prompts, elicitation, agent completion | External notification integration — MAJOR |
 
 ### Hook Locations
 
@@ -48,7 +49,7 @@ User Prompt → Session Start → Pre-Tool → Tool Execution → Post-Tool → 
 
 ### Disabling All Hooks
 
-> Since v1.0.4, use the `disableAllHooks` flag in configuration to disable all hooks:
+> Use the `disableAllHooks` flag in configuration to disable all hooks:
 
 ```json
 {
@@ -68,15 +69,73 @@ Hooks support three permission decisions in `preToolUse`:
 | `deny` | Block the tool with a reason |
 | `ask` | Prompt the user for confirmation before executing |
 
-> The `ask` decision (v1.0.4+) lets hooks request user confirmation instead of silently allowing or denying — useful for semi-automated workflows.
+> The `ask` decision lets hooks request user confirmation instead of silently allowing or denying — useful for semi-automated workflows.
 
 ### Cross-Platform Hook Compatibility
 
-> Since v1.0.6, hook configuration files work across **VS Code, Claude Code, and the CLI** without modification:
+> Hook configuration files work across **VS Code, Claude Code, and the CLI** without modification:
 > - PascalCase event names are accepted alongside camelCase (e.g., `PreToolUse` and `preToolUse` both work)
 > - Claude Code's nested `matcher/hooks` structure is supported
 > - The optional `type` field is accepted but not required
-> - Hooks config files that omit the `version` field are accepted (v1.0.5+)
+> - Hooks config files that omit the `version` field are accepted
+
+### Hook Behavior
+
+#### `preToolUse` hooks respect `modifiedArgs`/`updatedInput`/`additionalContext`
+
+> **Note:** `preToolUse` hooks can return `modifiedArgs`, `updatedInput`, and/or `additionalContext` fields in their JSON response. These fields are **respected by the CLI** and modify the tool invocation:
+>
+> ```json
+> {
+>   "modifiedArgs": "{\"command\": \"ls -la --color=never\"}",
+>   "updatedInput": "Modified prompt text",
+>   "additionalContext": "Extra context injected by hook"
+> }
+> ```
+>
+> Return only `permissionDecision`/`permissionDecisionReason` or the fields above — other keys are ignored.
+
+#### `sessionStart`/`sessionEnd` hooks fire once per session
+
+> **Note:** `sessionStart` and `sessionEnd` hooks fire **once per session**, not once per prompt. They fire exactly once at session start and session end. For per-prompt logic, use the `userPromptSubmitted` hook.
+
+### Hook Payload Fields
+
+> Hook payloads now use **PascalCase** field names alongside the existing camelCase names for cross-platform compatibility. New fields include:
+> - `hook_event_name` — the event type (e.g., `"PreToolUse"`, `"SessionStart"`)
+> - `session_id` — the session identifier
+> - ISO 8601 timestamps — timestamps are now formatted as ISO 8601 strings in addition to Unix milliseconds
+>
+> Both camelCase and PascalCase field names work; the PascalCase additions improve compatibility with VS Code and Claude Code hook configurations.
+
+### Plugin Hook Environment
+
+> Plugin hooks now receive `PLUGIN_ROOT` environment variables pointing to the plugin's installation directory. This allows hook scripts packaged with plugins to reference sibling files reliably.
+
+### Notification Hook Event — MAJOR
+
+> The new `notification` hook event fires on:
+> - **Shell completion** — when a background shell command finishes
+> - **Permission prompts** — when the agent requests tool permission
+> - **Elicitation** — when the agent asks the user a question
+> - **Agent completion** — when a sub-agent finishes its task
+>
+> Use this hook to integrate with desktop notifications, Slack, or other alerting systems:
+>
+> ```json
+> {
+>   "hooks": {
+>     "notification": [
+>       {
+>         "type": "command",
+>         "bash": "INPUT=$(cat); TYPE=$(echo \"$INPUT\" | jq -r '.notificationType'); echo \"Copilot: $TYPE\" | notify-send -",
+>         "cwd": ".",
+>         "timeoutSec": 5
+>       }
+>     ]
+>   }
+> }
+> ```
 
 ## Hands-On Exercises
 
@@ -744,12 +803,17 @@ All tool executions are logged with results:
 - ✅ Session hooks enable auditing
 - ✅ Error hooks support monitoring integration
 - ✅ Hooks must return JSON for permission decisions
-- ✅ `preCompact` hook fires before context compaction (v1.0.5+)
-- ✅ `subagentStart` hook fires when a sub-agent is spawned (v1.0.7+)
-- ✅ `disableAllHooks` flag disables all hooks (v1.0.4+)
-- ✅ Hook `ask` permission decision prompts user for confirmation (v1.0.4+)
-- ✅ Cross-platform hook configs work across VS Code, Claude Code, and CLI (v1.0.6+)
+- ✅ `preCompact` hook fires before context compaction
+- ✅ `subagentStart` hook fires when a sub-agent is spawned
+- ✅ `disableAllHooks` flag disables all hooks
+- ✅ Hook `ask` permission decision prompts user for confirmation
+- ✅ Cross-platform hook configs work across VS Code, Claude Code, and CLI
 - ✅ Hooks can also be defined in `settings.json`, `settings.local.json`, and `config.json`
+- ✅ `preToolUse` hooks respect `modifiedArgs`/`updatedInput`/`additionalContext`
+- ✅ `sessionStart`/`sessionEnd` hooks fire once per session, not per prompt
+- ✅ Hook payloads include PascalCase fields, `hook_event_name`, `session_id`, ISO 8601 timestamps
+- ✅ Plugin hooks receive `PLUGIN_ROOT` env vars
+- ✅ `notification` hook event fires on shell completion, permission prompts, elicitation, agent completion
 
 ## Next Steps
 

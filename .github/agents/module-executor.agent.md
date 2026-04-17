@@ -35,9 +35,8 @@ COPILOT_DOCS_URL: "https://docs.github.com/en/copilot/using-github-copilot/using
 FIX_THRESHOLD: TEXT<<
 Simple fixes (auto-apply to module):
 - Typos in command names or flags
-- Version number updates
 - Missing quotes or escapes
-- Deprecated flag replacements
+- Incorrect flag replacements
 
 Complex fixes (return in errors):
 - Structural changes to examples

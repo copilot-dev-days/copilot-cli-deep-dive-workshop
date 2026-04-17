@@ -375,7 +375,7 @@ Session transcript saved for future reference or sharing.
 | `/new [prompt]` | Start new conversation (old session stays backgrounded) | `/new` |
 | `/exit` | End session | `/exit` |
 | `/share` | Export session transcript (interactive alternative to `--share` flag) | `/share` |
-| `/share html` | Export session as self-contained interactive HTML file | `/share html` |
+| `/share html` | Export session as self-contained interactive HTML file; shows `file://` URL and `Ctrl+X O` to open | `/share html` |
 | `/model` | Switch AI model | `/model gpt-4` |
 | `/undo` | Undo last turn and revert file changes | `/undo` |
 | `/rewind` | Roll back to any point in conversation history (also via double-Esc) | `/rewind` |
@@ -397,9 +397,11 @@ Session transcript saved for future reference or sharing.
 - ✅ `/undo` reverts the last turn and its file changes
 - ✅ `/rewind` (or double-Esc) opens a timeline picker for rolling back to any conversation point
 - ✅ `/rename` auto-generates a session name from conversation history when called without arguments
-- ✅ `/cwd` and `/add-dir` control file access scope; `/cd` keeps a separate working directory per session
+- ✅ `/cwd` and `/add-dir` control file access scope; `/cwd` sets the working directory per session
 - ✅ Run multiple sessions in different terminals
 - ✅ Export sessions with `--share` for documentation or `/share html` for interactive HTML
+- ✅ `/share html` shows `file://` URL and `Ctrl+X O` shortcut to open in browser
+- ✅ Remote control sessions via `--remote` or `/remote` — observe/control sessions remotely
 
 ## Next Steps
 

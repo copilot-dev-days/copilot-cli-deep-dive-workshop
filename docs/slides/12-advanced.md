@@ -199,33 +199,6 @@ alias cop-resume='copilot --resume'
 
 ---
 
-## New Flags & Commands
-
-| What | Details |
-|------|---------|
-| `--help` | Now shows descriptions, examples, sorted flags |
-| Status line | Auto two-line layout on narrow terminals |
-| `/diagnose` | Troubleshooting: session & environment diagnostics |
-| `--mouse` / `--no-mouse` | Alt-screen mouse control (also `mouse` config) |
-| `--disable-parallel-tools-execution` | **Removed** |
-
----
-
-## New in v1.0.3–v1.0.16
-
-- **`/pr`** — Full PR management: create, view, fix CI, review, merge conflicts (v1.0.5)
-  - `/pr view local|web` replaces old `/pr open` (v1.0.4) ⚠️
-- **`write_agent`** — Multi-turn conversations with background agents (v1.0.5)
-- **`/experimental on|off`** — Toggle with auto-restart (v1.0.5)
-- **Human-readable sub-agent IDs** (e.g., `math-helper-0`) (v1.0.6)
-- **`read_agent`** includes inbound messages for multi-turn agents (v1.0.6)
-- **`--effort`** — Shorthand for `--reasoning-effort` (v1.0.10)
-- **`/undo`** — Undo last turn and revert file changes (v1.0.10)
-- **Monorepo discovery** — instructions, MCPs, skills from cwd to git root (v1.0.11)
-- **`/rewind`** — Timeline picker to roll back to any point (v1.0.13)
-
----
-
 ## Your Turn! 🚀
 
 Open **Module 12** in `docs/workshop/12-advanced.md`

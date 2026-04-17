@@ -53,7 +53,7 @@ style: |
   }
 ---
 
-# Module 4: Custom Instructions
+# Module 3: Custom Instructions
 
 ### GitHub Copilot CLI Workshop
 
@@ -163,20 +163,6 @@ Saved as `.github/instructions/tests.instructions.md`
 - **Show examples** — code snippets of preferred patterns
 - **Use `/instructions`** — see what's active, toggle on/off
 - **Nest `AGENTS.md`** — subdirectories can have their own persona
-
----
-
-## New in v1.0.6–v1.0.16
-
-- **`applyTo`** now accepts **YAML arrays** (v1.0.6+):
-  ```yaml
-  applyTo:
-    - "**/*.ts"
-    - "**/*.tsx"
-  ```
-- **"Customize" mode** for system message overrides (v1.0.7+)
-- **`COPILOT_CUSTOM_INSTRUCTIONS_DIRS`** for extra instruction paths
-- **Monorepo discovery** — instructions found from cwd up to git root (v1.0.11+)
 
 ---
 

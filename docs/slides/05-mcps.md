@@ -53,7 +53,7 @@ style: |
  }
 ---
 
-# Module 6: MCP Servers
+# Module 5: MCP Servers
 
 ### GitHub Copilot CLI Workshop
 
@@ -181,7 +181,7 @@ copilot --disable-mcp-server "my-server"
 
 ---
 
-## DevContainer MCP Config (v1.0.3+)
+## DevContainer MCP Config
 
 MCP servers can be pre-configured in `.devcontainer/devcontainer.json`:
 

@@ -22,6 +22,8 @@ You MUST verify each exercise has Goal, Steps, and Expected Outcome sections.
 You MUST check that file paths referenced in code blocks exist in the tryout/ directory or are clearly marked as to-be-created.
 You MUST flag external URLs in code blocks and verify they are syntactically valid.
 You MUST detect duplicate exercise content across modules.
+You MUST flag any version numbers, release tags, changelog references, or "since vX.Y.Z" annotations found in exercises as violations of the versionless documentation policy.
+You MUST flag any prose describing past versions, future versions, upgrades, migrations, or deprecations within exercises.
 You MUST produce a LINT_REPORT format when analysis completes.
 You MUST NOT auto-fix issues; present findings for user review.
 You MUST track progress using the todo tool.

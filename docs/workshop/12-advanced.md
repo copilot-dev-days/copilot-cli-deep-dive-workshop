@@ -39,13 +39,13 @@ Session Overrides (flags)
 | `~/.agents/skills/` | Personal skill discovery directory (shared with VS Code extension) |
 | `.github/` | Repository config |
 
-### New Commands & Features (v1.0.3–v1.0.16)
+### Commands & Features
 
-Several commands and features have been added since v1.0.2:
+The following commands and features are available:
 
 #### `/pr` — Pull Request Management
 
-> Since v1.0.4, `/pr open` has been replaced by `/pr view [local|web]`. In v1.0.5, the `/pr` command was expanded into a full PR management suite.
+> `/pr view [local|web]` manages pull request viewing. The `/pr` command provides a full PR management suite.
 
 | Subcommand | Description |
 | --- | --- |
@@ -57,17 +57,17 @@ The `/pr` command can also automatically fix CI failures, address review feedbac
 
 #### Background Agents & Multi-Turn Conversations
 
-> Since v1.0.3, background task notifications display in the timeline with expandable detail.
+> Background task notifications display in the timeline with expandable detail.
 
-Starting in v1.0.5, the `write_agent` tool enables multi-turn conversations with background agents — send follow-up messages to agents spawned via the task tool.
+The `write_agent` tool enables multi-turn conversations with background agents — send follow-up messages to agents spawned via the task tool.
 
-Sub-agents launched by the task tool are assigned **human-readable IDs** based on their name (e.g., `math-helper-0`) instead of generic `agent-0` identifiers (v1.0.6).
+Sub-agents launched by the task tool are assigned **human-readable IDs** based on their name (e.g., `math-helper-0`) instead of generic `agent-0` identifiers.
 
-The `read_agent` output now includes inbound messages that triggered each turn in multi-turn agents (v1.0.6).
+The `read_agent` output includes inbound messages that triggered each turn in multi-turn agents.
 
 #### `/experimental` Toggle
 
-> Since v1.0.5, toggling experimental mode with `/experimental on|off` automatically restarts the CLI to apply changes immediately. No manual restart needed.
+> Toggling experimental mode with `/experimental on|off` automatically restarts the CLI to apply changes immediately. No manual restart needed.
 
 #### Monorepo Support
 
@@ -80,6 +80,41 @@ Use `--effort` as a shorthand alias for `--reasoning-effort` to control model re
 #### `--resume` Enhancements
 
 `--resume` now accepts a task ID in addition to a session ID.
+
+#### Remote Control Sessions
+
+> The former "steering" feature has been renamed to **remote control**. Use the `--remote` flag or `/remote` command to start a remote control session:
+>
+> ```bash
+> # Start Copilot with remote control enabled
+> copilot --remote
+>
+> # Or enable in an existing session
+> /remote
+> ```
+>
+> Remote control allows another Copilot CLI instance to connect and observe or control your session — useful for pair programming, teaching, and debugging.
+
+#### ACP Clients Provide MCP Servers
+
+> ACP (Agent Client Protocol) clients can now provide MCP servers when starting or loading sessions. This enables IDE integrations to inject MCP server configurations into CLI sessions dynamically.
+
+#### `copilot help monitoring`
+
+> The new `copilot help monitoring` topic documents how to configure OpenTelemetry for observability:
+>
+> ```bash
+> copilot help monitoring
+> ```
+>
+> This covers OTLP exporter configuration, span attributes, and integration with monitoring backends.
+
+#### OpenTelemetry Monitoring Enhancements
+
+> OpenTelemetry monitoring has been expanded:
+> - Sub-agent spans are now tagged as `INTERNAL` spans for better trace visualization
+> - `time_to_first_chunk` metric tracks latency from request to first streaming chunk
+> - Improved span attributes for debugging agent behavior and performance
 
 ## Hands-On Exercises
 
@@ -305,11 +340,7 @@ Copilot CLI integrated into automated workflows.
  copilot --help
  ```
 
- > **Note:** `copilot --help` now provides comprehensive output with descriptions, usage examples, and sorted flags — much more detailed than earlier versions.
-
-7. **Deprecated flag — `--disable-parallel-tools-execution` (removed):**
-
- > ⚠️ **FEEDBACK**: The `--disable-parallel-tools-execution` flag and its corresponding config option were **removed**. If you relied on this flag, parallel tool execution is now always enabled. Remove any references from your scripts or config files.
+ > **Note:** `copilot --help` provides comprehensive output with descriptions, usage examples, and sorted flags.
 
 **Expected Outcome:**
 Full command-line control over Copilot behavior.
@@ -774,7 +805,7 @@ Language server timeouts are configured for your environment, eliminating timeou
 
  ```json
  {
- "trustedFolders": [
+ "trusted_folders": [
  "/home/user/projects",
  "/home/user/work"
  ],
@@ -788,7 +819,7 @@ Language server timeouts are configured for your environment, eliminating timeou
 
  ```bash
  # Using jq to update config
- jq '.trustedFolders += ["/new/path"]' ~/.copilot/config.json > tmp.json
+ jq '.trusted_folders += ["/new/path"]' ~/.copilot/config.json > tmp.json
  mv tmp.json ~/.copilot/config.json
  ```
 
@@ -796,11 +827,11 @@ Language server timeouts are configured for your environment, eliminating timeou
 
  ```json
  {
- "allowedUrls": [
+ "allowed_urls": [
  "https://api.github.com/*",
  "https://docs.github.com/*"
  ],
- "deniedUrls": [
+ "denied_urls": [
  "https://evil.com/*"
  ]
  }
@@ -1096,7 +1127,7 @@ Maximum performance from Copilot CLI using parallelization, autopilot, and fleet
 
 4. **Session insights with `/chronicle`:**
 
- > ⚠️ **FEEDBACK**: `/chronicle` is experimental. Subcommands and behavior may change in future releases.
+ > `/chronicle` is experimental. Subcommands and behavior may change.
 
  The `/chronicle` command analyzes your session history to provide actionable insights:
 
@@ -1133,7 +1164,7 @@ You can run deep-research workflows and extract insights from your session histo
 | `~/.copilot/mcp-config.json` | MCP servers | Base |
 | `~/.copilot/lsp.json` | LSP timeout configuration | |
 | `~/.copilot/skills/` | Personal skills | Base |
-| `~/.agents/skills/` | Personal skill discovery (shared with VS Code) | v1.0.11+ |
+| `~/.agents/skills/` | Personal skill discovery (shared with VS Code) | |
 | `.github/copilot-instructions.md` | Repository instructions | Base |
 
 ### Key Command-Line Flags
@@ -1237,7 +1268,7 @@ alias cop-resume='copilot --resume'
 - ✅ **Status line responsive layout** auto-switches to two-line layout on narrow terminals
 - ✅ **Expanded `--help` output** with descriptions, examples, and sorted flags
 - ✅ **`/research` command** for deep-research workflows with exportable reports
-- ✅ **`--disable-parallel-tools-execution` removed** — parallel tool execution is now always enabled
+- ✅ **Parallel tool execution** is always enabled
 - ✅ **`/chronicle` command** (experimental) for session-history insights: standup, tips, improve
 - ✅ **`--mouse`/`--no-mouse` flag** controls mouse behavior
 - ✅ **`--effort` flag** shorthand for `--reasoning-effort`
@@ -1249,6 +1280,10 @@ alias cop-resume='copilot --resume'
 - ✅ **`--output-format json`** enables JSONL output for scripting
 - ✅ **`--stream`** controls streaming mode
 - ✅ **`-i, --interactive`** starts interactive mode with auto-executed prompt
+- ✅ **Remote control sessions** via `--remote` or `/remote` (replaces "steering")
+- ✅ **ACP clients** can provide MCP servers when starting/loading sessions
+- ✅ **`copilot help monitoring`** documents OpenTelemetry configuration
+- ✅ **OpenTelemetry enhancements** — sub-agent INTERNAL spans, `time_to_first_chunk` metric
 - ✅ **LSP configuration** controls language server timeouts; default request timeout is 90s
 - ✅ **Shell mode access** via `!` command
 - ✅ config.json and lsp.json persist preferences

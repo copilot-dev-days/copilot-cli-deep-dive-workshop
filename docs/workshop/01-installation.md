@@ -17,7 +17,7 @@
 ## Concepts
 
 > [!NOTE]
-> 🎉 **Generally Available** — GitHub Copilot CLI is now at **v1.0.x**. No preview or beta opt-in is required.
+> 🎉 **Generally Available** — GitHub Copilot CLI is generally available. No preview or beta opt-in is required.
 
 ### Subscription Requirements
 
@@ -51,7 +51,7 @@ Copilot CLI supports multiple installation methods:
 > copilot update
 > ```
 >
-> `copilot update` replaces the full binary executable, not just the JS package .
+> `copilot update` replaces the full binary executable, not just the JS package.
 
 ### Version & Changelog Commands
 
@@ -68,7 +68,6 @@ Inside an interactive session, use these commands:
 | `/version` | Display CLI version and check for updates |
 | `/changelog` | View the latest release changelog |
 | `/changelog last 5` | Show the last 5 release changelogs |
-| `/changelog since v1.0.3` | Show changelogs since a specific version |
 | `/changelog summarize` | Get an AI-generated summary of recent changes |
 
 ## Hands-On Exercises
@@ -102,7 +101,7 @@ Inside an interactive session, use these commands:
 **Expected Outcome:**
 
 ```
-GitHub Copilot CLI 1.0.7
+GitHub Copilot CLI <version>
 ```
 
 > **Note:** The exact version number will reflect whichever release is current when you install. The format is the same regardless of installation method.
@@ -146,7 +145,7 @@ GitHub Copilot CLI 1.0.7
 **Expected Outcome:**
 
 ```
-GitHub Copilot CLI 1.0.7
+GitHub Copilot CLI <version>
 ```
 
 ### Exercise 1c: Install via Homebrew (macOS/Linux) option
@@ -176,7 +175,7 @@ GitHub Copilot CLI 1.0.7
 **Expected Outcome:**
 
 ```
-GitHub Copilot CLI 1.0.7
+GitHub Copilot CLI <version>
 ```
 
 ### Exercise 1d: Windows Installation (WinGet)
@@ -204,7 +203,7 @@ GitHub Copilot CLI 1.0.7
 **Expected Outcome:**
 
 ```
-GitHub Copilot CLI 1.0.7
+GitHub Copilot CLI <version>
 ```
 
 ### Exercise 2: Authenticate with GitHub
@@ -270,6 +269,7 @@ Copilot correctly identifies your working directory and shows available commands
 | Authentication fails | Check subscription status at github.com/settings/copilot |
 | Permission denied (npm) | Don't use sudo; fix npm permissions instead |
 | Organization policy error | Ask your admin to enable Copilot CLI policy |
+| `/logout` shows warning | When signed in via gh CLI, PAT, API key, or env var, `/logout` displays a warning explaining that the credential source must be removed separately |
 | Auto-update interfering | Disable with `--no-auto-update` or set `COPILOT_AUTO_UPDATE=false` |
 | Auth fails in Docker/container | Use PAT auth: `export GH_TOKEN="ghp_..."`. See [Authentication in Containers](#authentication-in-containers-and-ci-cd) below |
 
@@ -332,6 +332,7 @@ This stores credentials separately from github.com, allowing you to connect to y
 - ✅ Auto-updates can be disabled with `--no-auto-update`
 - ✅ Use `--binary-version` to check the installed version without launching
 - ✅ Use `/version` and `/changelog` inside sessions for version info
+- ✅ `/logout` warns when credential source is external (gh CLI, PAT, env var)
 
 ## Next Steps
 

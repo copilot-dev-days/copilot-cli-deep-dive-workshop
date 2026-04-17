@@ -53,7 +53,7 @@ style: |
   }
 ---
 
-# Module 10: Hooks
+# Module 9: Hooks
 
 ### GitHub Copilot CLI Workshop
 
@@ -84,9 +84,10 @@ Use cases: **logging**, **security guardrails**, **auditing**, **alerts**
 | `postToolUse` | After successful tool run | Verification, logging |
 | `postToolUseFailure` | After tool failure | Error handling |
 | `errorOccurred` | Error happens | Alerts, monitoring |
-| `preCompact` | Before compaction | State saving (v1.0.5) |
-| `subagentStart` | Sub-agent spawned | Context injection (v1.0.7) |
-| `permissionRequest` | Permission requested | Programmatic approve/deny (v1.0.16) |
+| `preCompact` | Before compaction | State saving |
+| `subagentStart` | Sub-agent spawned | Context injection |
+| `permissionRequest` | Permission requested | Programmatic approve/deny |
+| `notification` | Shell/agent completion, permissions | External notifications |
 
 ---
 
@@ -170,21 +171,6 @@ echo "[$(date -Iseconds)] $TOOL_NAME: $RESULT" >> logs/audit.log
 ```
 
 > `resultType` is `"success"` or `"error"`
-
----
-
-## New Hook Features (v1.0.4–v1.0.16)
-
-- **`disableAllHooks`** config flag — turn off all hooks (v1.0.4)
-- **`ask`** permission decision — prompt user for confirmation (v1.0.4):
-  ```json
-  {"permissionDecision": "ask", "permissionDecisionReason": "Confirm?"}
-  ```
-- **Cross-platform compat** — PascalCase event names, Claude Code nested structure (v1.0.6)
-- Hook config files that **omit `version`** field now accepted (v1.0.5)
-- **`postToolUseFailure`** hook for tool errors; `postToolUse` fires only on success (v1.0.15)
-- **`permissionRequest`** hook for programmatic tool approval (v1.0.16)
-- Hooks can also be defined in **`settings.json`** and **`config.json`** (v1.0.8)
 
 ---
 

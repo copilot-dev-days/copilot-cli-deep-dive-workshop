@@ -57,6 +57,14 @@ This displays all discovered instruction files (AGENTS.md, copilot-instructions.
 
 This is especially helpful when multiple instruction files interact and you need to isolate which one is causing unexpected behavior.
 
+### Instruction File Consolidation
+
+> Instruction files with `applyTo` frontmatter are consolidated into a single table display in `/instructions` output. This reduces context usage by grouping path-specific instructions together instead of listing them individually.
+
+### Duplicate Instruction File Dedup
+
+> Copilot CLI now automatically deduplicates instruction files that are discovered from multiple paths (e.g., when `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` overlaps with the project directory). Each unique instruction file is loaded only once, even if found in multiple locations.
+
 ### Disabling Custom Instructions
 
 You can completely disable loading of custom instructions from AGENTS.md and related files:
@@ -76,7 +84,7 @@ copilot
 
 ### System Message Customization
 
-> ⚠️ **FEEDBACK**: The "customize" mode for system message configuration is available since **v1.0.7**.
+> The "customize" mode for system message configuration is experimental.
 
 You can override specific sections of the system prompt using the "customize" mode in configuration. This allows section-level control over the system message without replacing it entirely.
 
@@ -263,11 +271,11 @@ Copilot acts as a senior TypeScript engineer and suggests conventional commits.
    ---
 
    > [!TIP]
-   > Since v1.0.6, `applyTo` accepts both a comma-separated string and a YAML array:
+   > `applyTo` accepts both a comma-separated string and a YAML array:
    > ```yaml
    > # String (original format)
    > applyTo: "**/*.ts,**/*.tsx"
-   > # Array (v1.0.6+)
+   > # Array
    > applyTo:
    >   - "**/*.ts"
    >   - "**/*.tsx"
@@ -482,7 +490,9 @@ Commit messages follow Conventional Commits format.
 - ✅ Commit conventions should be explicitly documented
 - ✅ `--no-custom-instructions` disables all instruction file loading
 - ✅ `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` adds extra instruction search paths
-- ✅ `applyTo` accepts both string and array formats (v1.0.6+)
+- ✅ `applyTo` accepts both string and array formats
+- ✅ `applyTo` instruction files consolidated into table for reduced context usage
+- ✅ Duplicate instruction files are automatically deduplicated
 
 ## Next Steps
 

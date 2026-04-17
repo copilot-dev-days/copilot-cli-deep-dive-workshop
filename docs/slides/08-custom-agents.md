@@ -53,7 +53,7 @@ style: |
  }
 ---
 
-# Module 9: Custom Agents
+# Module 8: Custom Agents
 
 ### GitHub Copilot CLI Workshop
 
@@ -143,7 +143,7 @@ Agents can **delegate to other agents** for complex workflows
 
 ---
 
-## configure-copilot Sub-Agent (v1.0.4+)
+## configure-copilot Sub-Agent
 
 Built-in agent that manages configuration for you:
 
@@ -153,7 +153,7 @@ Help me set up an MCP server for PostgreSQL
 
 - Manages **MCP servers**, **custom agents**, and **skills**
 - Modifies config files on your behalf
-- Human-readable sub-agent IDs (e.g., `math-helper-0`) (v1.0.6)
+- Human-readable sub-agent IDs (e.g., `math-helper-0`)
 
 ---
 

@@ -41,6 +41,15 @@ Level 2: Instructions → Copilot loads SKILL.md body (when relevant)
 Level 3: Resources → Copilot accesses supporting files (as needed)
 ```
 
+### Built-in Skills
+
+> Copilot CLI ships with a set of **built-in skills** that are always available without any configuration. These provide common capabilities out of the box:
+> - Code generation and transformation patterns
+> - Testing and validation workflows
+> - Documentation generation
+>
+> Built-in skills are listed alongside project and personal skills in the `/skills` command output. They cannot be disabled but can be overridden by creating a project or personal skill with the same name.
+
 ## Hands-On Exercises
 
 ### Exercise 1: Create a Project Skill
@@ -628,6 +637,7 @@ license: MIT # Optional: License identifier
 - ✅ Copilot auto-selects skills based on your request
 - ✅ YAML array syntax for `allowed-tools` in skill files now loads correctly
 - ✅ Skill files saved with UTF-8 BOM (common on Windows) now load correctly
+- ✅ Built-in skills ship with CLI — always available without configuration
 
 ## Next Steps
 

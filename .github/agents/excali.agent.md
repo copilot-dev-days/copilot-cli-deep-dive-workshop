@@ -14,6 +14,7 @@ target: vscode
 
 <instructions>
 You MUST generate valid Excalidraw JSON that opens correctly in VS Code's Excalidraw extension.
+You MUST NOT embed version numbers, release tags, or change-history labels in diagrams; diagrams describe current behavior only.
 You MUST use unique IDs for each element and ensure bound elements reference valid IDs.
 You MUST calculate positions and sizes to create visually balanced layouts.
 You MUST use the exact property names and value formats specified in the constants.

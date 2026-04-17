@@ -140,7 +140,7 @@ Type **`/help`** to see them all
 |----------|-------------|
 | **Review** | `/plan`, `/review`, `/diff`, `/research` |
 | **Session** | `/clear`, `/resume`, `/rename`, `/session`, `/usage` |
-| **Navigation** | `/cwd`, `/cd`, `/add-dir`, `/list-dirs` |
+| **Navigation** | `/cwd`, `/add-dir`, `/list-dirs` |
 | **Context** | `/context`, `/compact` |
 | **Config** | `/model`, `/mcp`, `/theme`, `/terminal-setup`, `/streamer-mode`, `/instructions` |
 | **Tools** | `/allow-all`, `/yolo`, `/reset-allowed-tools` |
@@ -186,21 +186,6 @@ When Copilot wants to run a command, you choose:
 
 > ⚠️ Be careful with session-wide approval for `rm`, `git push`, `sudo`
 > ✅ Safe for `ls`, `cat`, `git status`, `git diff`
-
----
-
-## New in v1.0.3–v1.0.16
-
-- **`/restart`** — Hot restart preserving your session
-- **`/diff`** now has **syntax highlighting** (17 languages) with Home/End and Page Up/Page Down navigation
-- **Branch indicator** in header: `main*+%`
-  - `*` unstaged, `+` staged, `%` untracked
-- **`quit`** works as exit alias (alongside `/exit`)
-- **Double-Esc** — opens timeline picker to roll back to any conversation point
-- **`/undo`** — Undo last turn and revert file changes
-- **`/new`** — Start fresh conversation (old session stays backgrounded)
-- **`/clear`** — Abandon session entirely
-- **`/allow-all [on|off|show]`** — Toggle or check allow-all mode
 
 ---
 

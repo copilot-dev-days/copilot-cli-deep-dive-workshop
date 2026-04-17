@@ -53,15 +53,15 @@ Every potentially destructive action requires approval:
 2. **Session-wide** - Approve this tool for the entire session
 3. **Deny** - Reject and provide alternative guidance
 
-> ⚠️ **FEEDBACK** — Undo operations now always require user confirmation before applying — they no longer auto-apply. This safety improvement prevents accidental reversions.
+> Undo operations always require user confirmation before applying — they do not auto-apply. This safety measure prevents accidental reversions.
 
 ### Path Permission Approval
 
-> Since v1.0.4, the path permission dialog offers a **one-time approval** option in addition to permanently adding the path to the allowed list. This lets you grant access for the current session without modifying your persistent configuration.
+> The path permission dialog offers a **one-time approval** option in addition to permanently adding the path to the allowed list. This lets you grant access for the current session without modifying your persistent configuration.
 
 ### Tool Search
 
-> Since v1.0.6, Claude models can **discover and use tools dynamically** with tool search. The model can find relevant tools without you explicitly specifying them, reducing the need for manual `--allow-tool` flags in some workflows.
+> Claude models can **discover and use tools dynamically** with tool search. The model can find relevant tools without you explicitly specifying them, reducing the need for manual `--allow-tool` flags in some workflows.
 
 ## Hands-On Exercises
 
@@ -297,8 +297,8 @@ You understand YOLO mode's power and risks.
 >
 > | Layer | Purpose | Scope |
 > |---|---|---|
-> | **Startup trust** (`trustedFolders`) | Skips the "do you trust this folder?" prompt when launching Copilot | Launch-time only |
-> | **Runtime access** (`/add-dir`, `--allow-path`) | Controls which paths the agent can read/write during a session | Session-time only |
+> | **Startup trust** (`trusted_folders`) | Skips the "do you trust this folder?" prompt when launching Copilot | Launch-time only |
+> | **Runtime access** (`/add-dir`, `--add-dir`) | Controls which paths the agent can read/write during a session | Session-time only |
 >
 > These are **independent** — trusting a folder does **not** grant runtime file access to it, and vice versa.
 
@@ -312,7 +312,7 @@ You understand YOLO mode's power and risks.
 
 2. When prompted about trusting the folder:
  - **Yes, proceed** — Trust for this session only
- - **Yes, and remember** — Permanently add to `trustedFolders`
+ - **Yes, and remember** — Permanently add to `trusted_folders`
  - **No, exit** — Don't trust
 
 3. Select **Yes, proceed** for now.
@@ -321,13 +321,13 @@ You understand YOLO mode's power and risks.
  ```bash
  cat ~/.copilot/config.json
  ```
- Notice that `trustedFolders` was **not** updated (you chose session-only trust).
+ Notice that `trusted_folders` was **not** updated (you chose session-only trust).
 
 5. To permanently skip the prompt for specific directories, add them to your config:
  ```bash
  # Edit config.json to add:
  {
- "trustedFolders": [
+ "trusted_folders": [
  "/home/user/projects",
  "/home/user/copilot-workshop"
  ]
@@ -341,7 +341,7 @@ You understand YOLO mode's power and risks.
  ```
  /list-dirs
  ```
- You'll see only the **working directory** and `/tmp` — not the `trustedFolders` entries.
+ You'll see only the **working directory** and `/tmp` — not the `trusted_folders` entries.
 
 7. Grant runtime access to an additional directory:
  > Note: Create the directory first (e.g., `mkdir -p /tmp/safe-dir`).
@@ -351,13 +351,13 @@ You understand YOLO mode's power and risks.
 
 8. Verify with `/list-dirs` — the new path now appears.
 
-9. To grant runtime access at launch instead, use the `--allow-path` flag:
+9. To grant runtime access at launch instead, use the `--add-dir` flag:
  ```bash
- copilot --allow-path /home/user/projects --allow-path /home/user/copilot-workshop
+ copilot --add-dir /home/user/projects --add-dir /home/user/copilot-workshop
  ```
 
 **Expected Outcome:**
-You understand that `trustedFolders` controls the **startup trust prompt**, while `/add-dir`, `/list-dirs`, and `--allow-path` control **runtime file access** — and that these are two independent permission layers.
+You understand that `trusted_folders` controls the **startup trust prompt**, while `/add-dir`, `/list-dirs`, and `--add-dir` control **runtime file access** — and that these are two independent permission layers.
 
 ### Exercise 7: Creating a Safe Automation Script
 
@@ -518,6 +518,8 @@ copilot -p "Fix all linting errors" --allow-all-tools --no-ask-user
 |------|------------|
 | `--yolo` | `--allow-all-tools --allow-all-paths --allow-all-urls` |
 | `--allow-all` | Same as `--yolo` |
+
+> **Note:** `/yolo` and `--yolo` now behave identically. When you toggle `/yolo` in an interactive session, the YOLO state persists across `/restart` — you don't need to re-enable it after a hot restart.
 | `--allow-url` | Allow specific URLs/domains |
 | `--deny-url` | Deny specific URLs/domains (takes precedence) |
 | `--allow-all-urls` | Allow all URLs without confirmation |
@@ -533,7 +535,7 @@ copilot -p "Fix all linting errors" --allow-all-tools --no-ask-user
 | Command | Description |
 |---------|-------------|
 | `/reset-allowed-tools` | Reset the list of tools approved during the session |
-| `/add-dir <path>` | Add a trusted directory for the session |
+| `/add-dir <path>` | Add a trusted directory for the session (supports relative paths like `./src`, `../sibling`) |
 | `/list-dirs` | View accessible directories |
 
 ## Summary
@@ -549,8 +551,10 @@ copilot -p "Fix all linting errors" --allow-all-tools --no-ask-user
 - ✅ `url` pattern enables tool-level URL matching
 - ✅ `--secret-env-vars` protects sensitive values from leaking
 - ✅ `--no-ask-user` enables fully autonomous operation
-- ✅ Path permission dialog offers one-time approval (v1.0.4+)
-- ✅ Claude models support dynamic tool search (v1.0.6+)
+- ✅ Path permission dialog offers one-time approval
+- ✅ Claude models support dynamic tool search
+- ✅ `/add-dir` accepts relative paths like `./src` and `../sibling`
+- ✅ `/yolo` state persists across `/restart`; `/yolo` and `--yolo` behave identically
 
 ## Next Steps
 

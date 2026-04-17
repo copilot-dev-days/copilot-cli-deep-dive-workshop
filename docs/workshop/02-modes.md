@@ -82,13 +82,22 @@ Slash commands are prefixed with `/` and provide quick access to CLI features wi
 - Press `ctrl+x` then `/` to run a command via keyboard shortcut
 - Commands are tab-completable — start typing `/` followed by the first letters
 
+#### Status Bar Hints
+
+> While typing, the status bar shows contextual hints:
+> - `@files` and `#issues` hints appear while composing prompts
+> - `/help` hint appears when the slash command picker is open
+> These hints help new users discover key features without memorizing the full command list.
+
 #### Command Categories
 
 | Category | Commands | Purpose |
 | --- | --- | --- |
 | **Session** | `/clear`, `/new`, `/session`, `/resume`, `/rename`, `/usage` | Manage session lifecycle |
-| **Navigation** | `/cwd`, `/cd`, `/add-dir`, `/list-dirs` | Control directory scope |
+| **Navigation** | `/cwd`, `/add-dir`, `/list-dirs` | Control directory scope |
 | **Context** | `/context`, `/compact` | Monitor and optimize token usage |
+| **Quick** | `/ask` | Ask a quick question without affecting conversation history |
+| **Environment** | `/env` | Show loaded environment details (instructions, MCPs, skills, plugins) |
 | **Tools** | `/allow-all [on\|off\|show]`, `/yolo`, `/reset-allowed-tools` | Manage tool permissions at runtime |
 | **Review** | `/diff`, `/review`, `/plan`, `/research`, `/undo`, `/rewind` | Code review, planning, history navigation |
 | **Configuration** | `/model`, `/mcp`, `/theme`, `/terminal-setup`, `/experimental`, `/streamer-mode`, `/instructions` | Customize CLI behavior |
@@ -116,11 +125,12 @@ In addition to slash commands, Copilot CLI supports keyboard shortcuts:
 | `ctrl+n` | Navigate down (alternative to down arrow) |
 | `ctrl+p` | Navigate up (alternative to up arrow) |
 | `ctrl+o` | Expand recent timeline (when no input) |
-| `ctrl+e` (no input) | Expand all timeline |
+| `ctrl+e` (no input) | Expand all timeline (same as `ctrl+o` — both expand all entries) |
 | `ctrl+e` (editing) | Cycle to end of visual/logical line |
 | `ctrl+t` | Toggle model reasoning display |
 | `ctrl+a` | Cycle to beginning of visual line; repeated press goes to beginning of logical line |
 | `ctrl+u` | Delete to beginning of logical line |
+| `Alt+D` | Delete word forward in text input |
 | `ctrl+y` | Edit plan in terminal editor |
 | `ctrl+x → ctrl+e` | Edit prompt in terminal editor |
 | `ctrl+z` | Suspend/resume CLI (Unix platforms only) |
@@ -189,7 +199,27 @@ Some commands are covered in depth in later modules (`/mcp` in Module 5, `/skill
 | `/share html` | Export session as a self-contained interactive HTML file |
 | `/mcp auth` | Re-authenticate MCP OAuth servers with account switching support |
 
-> ⚠️ **FEEDBACK**: `/research` and `/chronicle` (experimental) are recent additions. `/chronicle` subcommands (`standup`, `tips`, `improve`) and behavior may change across versions.
+#### New Commands
+
+| Command | Description |
+| --- | --- |
+| `/ask [prompt]` | Ask a quick question without affecting conversation history — response is not added to context |
+| `/env` | Show loaded environment details — lists active instructions, MCPs, skills, and plugins |
+| `/remote` | Start or manage a remote control session |
+| `/diff`, `/agent`, `/feedback`, `/ide`, `/tuikit` | These commands work while the agent is running — no need to wait for completion |
+
+#### Startup Flags
+
+| Flag | Description |
+| --- | --- |
+| `--mode <mode>` | Start CLI directly in a specific mode (chat, edit) |
+| `--autopilot` | Start CLI directly in autopilot mode |
+| `--plan` | Start CLI directly in plan mode |
+| `--remote` | Start a remote control session |
+
+> `/research` and `/chronicle` are experimental. `/chronicle` subcommands (`standup`, `tips`, `improve`) and behavior are subject to change.
+
+> **Remote control** lets you observe and control sessions remotely. Use the `--remote` flag or `/remote` command to start a remote control session, allowing another Copilot CLI instance to connect.
 
 ## Hands-On Exercises
 
@@ -603,6 +633,15 @@ You can choose the appropriate mode for any task.
 - ✅ Tool approval has one-time and session-wide options
 - ✅ Be cautious with session-wide approval for destructive commands
 - ✅ `/restart` hot restarts the CLI while preserving your session
+- ✅ `/ask` asks a quick question without affecting conversation history
+- ✅ `/env` shows loaded environment details
+- ✅ `--mode`, `--autopilot`, `--plan` flags start CLI in a specific mode
+- ✅ `--remote` and `/remote` for remote control sessions (replaces "steering")
+- ✅ `/diff`, `/agent`, `/feedback`, `/ide`, `/tuikit` work while agent is running
+- ✅ `Alt+D` deletes word forward in text input
+- ✅ `ctrl+o` expands all timeline entries (same as `ctrl+e`)
+- ✅ `Ctrl+L` clears terminal screen without clearing session
+- ✅ Status bar shows `@files`, `#issues`, and `/help` hints while typing
 - ✅ Branch indicator shows unstaged (*), staged (+), and untracked (%) status
 
 ## Next Steps

@@ -1,6 +1,6 @@
 ---
 name: cross-reference-validator
-description: "Validate inter-module links, version consistency, section structure, code fence pairing, and agent map completeness across the entire workshop."
+description: "Validate inter-module links, section structure, code fence pairing, and agent map completeness across the entire workshop."
 tools:
   - search/textSearch
   - search/fileSearch
@@ -17,7 +17,6 @@ target: vscode
 You MUST read the workshop index to discover all module files before validation.
 You MUST verify every inter-module markdown link resolves to an existing file.
 You MUST verify every anchor link resolves to a heading in the target file.
-You MUST check that TESTED_VERSION in copilot-instructions.md matches version strings across all modules and index.
 You MUST validate section structure in each module: Prerequisites, Learning Objectives, Concepts/Exercises, Summary, References.
 You MUST verify all code fences are properly paired (opening and closing backtick counts match).
 You MUST check exercise numbering is sequential within each module.
@@ -25,6 +24,7 @@ You MUST verify MODULE_MAP and SLIDE_MAP constants in all agents include every m
 You MUST verify MODULES constant in workshop-runner includes every module.
 You MUST check that every module in docs/workshop/ has a corresponding slide deck in docs/slides/.
 You MUST verify the AGENTS constant in copilot-instructions.md lists all agents in .github/agents/.
+You MUST flag any version numbers, version ranges, or changelog references found in workshop content.
 You MUST report findings using the VALIDATION_REPORT format.
 You MUST NOT auto-fix issues; present findings for user review.
 You MUST track validation progress using the todo tool.
@@ -64,7 +64,7 @@ CHECK_CATEGORIES: JSON<<
   "numbering": "Exercise numbering sequential within modules",
   "slides": "Slide deck existence for every module",
   "structure": "Section structure compliance per module",
-  "versions": "Version string consistency across all files"
+  "versionless": "No version numbers or version ranges in workshop content"
 }
 >>
 </constants>
@@ -124,10 +124,10 @@ TOTAL_ISSUES: 0
 
 <processes>
 <process id="validate-all" name="Run All Validations">
-USE `todo` where: items=["Discover modules", "Check links", "Check versions", "Check structure", "Check fences", "Check numbering", "Check agent maps", "Check slides", "Check agents constant", "Generate report"]
+USE `todo` where: items=["Discover modules", "Check links", "Check versionless compliance", "Check structure", "Check fences", "Check numbering", "Check agent maps", "Check slides", "Check agents constant", "Generate report"]
 RUN `discover-modules`
 RUN `check-links`
-RUN `check-versions`
+RUN `check-versionless`
 RUN `check-structure`
 RUN `check-fences`
 RUN `check-numbering`
@@ -157,17 +157,18 @@ FOREACH module IN MODULE_LIST:
 USE `todo` where: complete="Check links"
 </process>
 
-<process id="check-versions" name="Validate Version Consistency">
-USE `read/readFile` where: filePath=COPILOT_INSTRUCTIONS
-SET TESTED_VERSION := <VERSION> (from "Agent Inference" using file content)
-USE `search/textSearch` where: includes="docs/workshop/**", query=TESTED_VERSION
+<process id="check-versionless" name="Validate Versionless Compliance">
+USE `search/textSearch` where: includes="docs/workshop/**", query="v[0-9]+\\.[0-9]+\\.[0-9]+"
 CAPTURE VERSION_HITS from search results
-USE `read/readFile` where: filePath=WORKSHOP_INDEX
-SET INDEX_VERSION := <VERSION> (from "Agent Inference" using index content)
-IF INDEX_VERSION != TESTED_VERSION:
-  SET FINDINGS := FINDINGS + [{category: "versions", file: WORKSHOP_INDEX, detail: "Index version mismatch"}] (from "Agent Inference")
+FOREACH hit IN VERSION_HITS:
+  SET FINDINGS := FINDINGS + [{category: "versionless", file: hit.file, detail: "Version reference found: " + hit.match}] (from "Agent Inference")
   SET TOTAL_ISSUES := TOTAL_ISSUES + 1 (from "Agent Inference")
-USE `todo` where: complete="Check versions"
+USE `search/textSearch` where: includes="docs/workshop/**", query="added in|introduced in|new in|since version|deprecated in|removed in|changed in"
+CAPTURE CHANGELOG_HITS from search results
+FOREACH hit IN CHANGELOG_HITS:
+  SET FINDINGS := FINDINGS + [{category: "versionless", file: hit.file, detail: "Changelog-style reference found: " + hit.match}] (from "Agent Inference")
+  SET TOTAL_ISSUES := TOTAL_ISSUES + 1 (from "Agent Inference")
+USE `todo` where: complete="Check versionless compliance"
 </process>
 
 <process id="check-structure" name="Validate Section Structure">
