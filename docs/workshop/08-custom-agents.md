@@ -560,9 +560,9 @@ Agent performs analysis without modification capabilities.
 
 > **Note:** Enterprise and organization-level agents are configured by admins in a `.github-private` repository. See the [GitHub Docs](https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-for-organization/prepare-for-custom-agents) for details.
 
-> The `custom_agents.default_local_only` config option allows you to default to only local custom agents, skipping remote org/enterprise agents. Set it in `~/.copilot/config.json`:
+> The `customAgents.defaultLocalOnly` config option allows you to default to only local custom agents, skipping remote org/enterprise agents. Set it in `~/.copilot/config.json`:
 > ```json
-> { "custom_agents": { "default_local_only": true } }
+> { "customAgents": { "defaultLocalOnly": true } }
 > ```
 
 **Expected Outcome:**

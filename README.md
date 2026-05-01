@@ -1,9 +1,9 @@
 # GitHub Copilot CLI — Deep-Dive Workshop
 
-[![Copilot CLI version](https://img.shields.io/badge/Copilot%20CLI-v1.0.27-blue?logo=github)](https://github.com/github/copilot-cli/releases/tag/v1.0.27)
+[![Copilot CLI version](https://img.shields.io/badge/Copilot%20CLI-v1.0.39-blue?logo=github)](https://github.com/github/copilot-cli/releases/tag/v1.0.39)
 [![APS version](https://img.shields.io/badge/APS-v1.2.1-blue?logo=github)](https://github.com/chris-buckley/agnostic-prompt-standard/releases/tag/v1.2.1)
 
-A **half-day, instructor-led** workshop that takes teams from first install to advanced automation with GitHub Copilot CLI. Covers operating modes, custom instructions, MCP servers, agent skills, plugins, custom agents, hooks, context management, and more — all through hands-on exercises tested against **Copilot CLI v1.0.27**.
+A **half-day, instructor-led** workshop that takes teams from first install to advanced automation with GitHub Copilot CLI. Covers operating modes, custom instructions, MCP servers, agent skills, plugins, custom agents, hooks, context management, and more — all through hands-on exercises tested against **Copilot CLI v1.0.39**.
 
 ## What's Inside
 

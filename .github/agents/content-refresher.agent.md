@@ -34,6 +34,7 @@ You MUST dispatch each sub-agent via agent/runSubagent and collect its output.
 You MUST present accuracy findings and wait for the user to select which items to fix.
 You MUST present a summary of applied changes after the apply phase completes.
 You MUST run all lightweight validators before offering the full integration test.
+You MUST update VALIDATED_CLI_VERSION in COPILOT_INSTRUCTIONS and the README badge/text after applying content changes to match the current `copilot --version`.
 You MUST NOT run workshop-runner unless the user explicitly requests it.
 You MUST NOT create git commits, branches, or pull requests unless the user explicitly asks.
 You MUST track progress using the todo tool with one item per phase.
@@ -46,6 +47,9 @@ You SHOULD offer to run workshop-runner after lightweight validation passes.
 <constants>
 COPILOT_INSTRUCTIONS: ".github/copilot-instructions.md"
 README_FILE: "README.md"
+VERSION_CONSTANT: "VALIDATED_CLI_VERSION"
+VERSION_BADGE_PATTERN: "Copilot%20CLI-v<VERSION>-blue"
+VERSION_TEXT_PATTERN: "validated against **Copilot CLI v<VERSION>**"
 
 SUBAGENTS: JSON<<
 {
@@ -160,6 +164,10 @@ RETURN: format="REFRESH_PLAN", instructions_text="Reply **start** to begin Phase
 </process>
 
 <process id="phase-check" name="Phase 1 — Check Accuracy">
+READ COPILOT_INSTRUCTIONS
+CAPTURE BASELINE_VERSION from VERSION_CONSTANT in COPILOT_INSTRUCTIONS
+CAPTURE CURRENT_CLI_VERSION from `copilot --version` (parse version string)
+TELL "Baseline: {BASELINE_VERSION} → Current CLI: {CURRENT_CLI_VERSION}" level=brief
 USE `agent/runSubagent` where: agent=SUBAGENTS.accuracy
 CAPTURE ACCURACY_REPORT from subagent result
 SET CURRENT_PHASE := "select" (from "Agent Inference")
@@ -181,11 +189,22 @@ USE `todo` where: complete="Select fixes"
 <process id="phase-apply" name="Phase 3 — Apply Changes">
 USE `agent/runSubagent` where: agent=SUBAGENTS.content, prompt=SELECTED_FIXES
 CAPTURE APPLY_RESULT from subagent result
+RUN `phase-stamp-version`
 SET CURRENT_PHASE := "validate-light" (from "Agent Inference")
 SET PHASES_COMPLETED := PHASES_COMPLETED + ["apply"] (from "Agent Inference")
 USE `todo` where: complete="Apply changes"
 TELL "Changes applied. Running lightweight validation next." level=brief
 RUN `phase-validate-light`
+</process>
+
+<process id="phase-stamp-version" name="Stamp CLI Version">
+CAPTURE CURRENT_CLI_VERSION from `copilot --version` (parse version string)
+READ COPILOT_INSTRUCTIONS
+UPDATE VERSION_CONSTANT value to CURRENT_CLI_VERSION in COPILOT_INSTRUCTIONS
+READ README_FILE
+UPDATE VERSION_BADGE_PATTERN with CURRENT_CLI_VERSION in README_FILE
+UPDATE VERSION_TEXT_PATTERN with CURRENT_CLI_VERSION in README_FILE
+TELL "Stamped VALIDATED_CLI_VERSION to {CURRENT_CLI_VERSION} in copilot-instructions.md and README.md" level=brief
 </process>
 
 <process id="phase-validate-light" name="Phase 4 — Lightweight Validation">

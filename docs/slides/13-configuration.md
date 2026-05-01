@@ -64,7 +64,7 @@ style: |
 - Configuration file (`config.json`) options
 - Environment variables reference
 - CLI flags quick reference
-- IDE integration (`/ide`, `open_diff_on_edit`)
+- IDE integration (`/ide`, `openDiffOnEdit`)
 - Accessibility & streamer mode
 - Team configuration standardization
 - Logging and debugging
@@ -102,8 +102,8 @@ Override location: `COPILOT_HOME` env var or `--config-dir` flag
 | `includeCoAuthoredBy` | `true` | Co-authored-by in commits |
 | `streamerMode` | `false` | Hide model names/quota |
 | `companyAnnouncements` | `[]` | Team startup messages |
-| `ide.auto_connect` | `true` | Auto-connect to IDE |
-| `ide.open_diff_on_edit` | `true` | Diffs in IDE |
+| `ide.autoConnect` | `true` | Auto-connect to IDE |
+| `ide.openDiffOnEdit` | `true` | Diffs in IDE |
 
 ---
 
@@ -151,8 +151,8 @@ Override location: `COPILOT_HOME` env var or `--config-dir` flag
 ```
 
 Config options:
-- `ide.auto_connect` -- auto-connect on startup
-- `ide.open_diff_on_edit` -- show diffs in IDE
+- `ide.autoConnect` -- auto-connect on startup
+- `ide.openDiffOnEdit` -- show diffs in IDE
 
 ---
 

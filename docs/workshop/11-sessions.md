@@ -32,7 +32,7 @@ Sessions can be:
 
 Sessions are stored in your Copilot config directory:
 - Default: `~/.copilot/`
-- Custom: Set via `XDG_CONFIG_HOME` environment variable
+- Custom: Set via `COPILOT_HOME` environment variable
 
 ## Hands-On Exercises
 
@@ -385,6 +385,9 @@ Session transcript saved for future reference or sharing.
 | Flag | Description |
 | --- | --- |
 | `--resume` | Resume last session |
+| `--continue` | Resume most recent session |
+| `-n, --name <name>` | Set a name for the new session |
+| `--connect[=sessionId]` | Connect directly to a remote session (optionally specify session ID or task ID) |
 | `--share PATH` | Export to markdown file |
 | `--share-gist` | Export to GitHub Gist |
 | `--silent` | Suppress stats/logs |
@@ -397,6 +400,7 @@ Session transcript saved for future reference or sharing.
 - ✅ `/undo` reverts the last turn and its file changes
 - ✅ `/rewind` (or double-Esc) opens a timeline picker for rolling back to any conversation point
 - ✅ `/rename` auto-generates a session name from conversation history when called without arguments
+- ✅ `--name` flag sets a session name at launch; `--resume` accepts a session name for lookup
 - ✅ `/cwd` and `/add-dir` control file access scope; `/cwd` sets the working directory per session
 - ✅ Run multiple sessions in different terminals
 - ✅ Export sessions with `--share` for documentation or `/share html` for interactive HTML

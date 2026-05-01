@@ -297,7 +297,7 @@ You understand YOLO mode's power and risks.
 >
 > | Layer | Purpose | Scope |
 > |---|---|---|
-> | **Startup trust** (`trusted_folders`) | Skips the "do you trust this folder?" prompt when launching Copilot | Launch-time only |
+> | **Startup trust** (`trustedFolders`) | Skips the "do you trust this folder?" prompt when launching Copilot | Launch-time only |
 > | **Runtime access** (`/add-dir`, `--add-dir`) | Controls which paths the agent can read/write during a session | Session-time only |
 >
 > These are **independent** — trusting a folder does **not** grant runtime file access to it, and vice versa.
@@ -312,7 +312,7 @@ You understand YOLO mode's power and risks.
 
 2. When prompted about trusting the folder:
  - **Yes, proceed** — Trust for this session only
- - **Yes, and remember** — Permanently add to `trusted_folders`
+ - **Yes, and remember** — Permanently add to `trustedFolders`
  - **No, exit** — Don't trust
 
 3. Select **Yes, proceed** for now.
@@ -321,13 +321,13 @@ You understand YOLO mode's power and risks.
  ```bash
  cat ~/.copilot/config.json
  ```
- Notice that `trusted_folders` was **not** updated (you chose session-only trust).
+ Notice that `trustedFolders` was **not** updated (you chose session-only trust).
 
 5. To permanently skip the prompt for specific directories, add them to your config:
  ```bash
  # Edit config.json to add:
  {
- "trusted_folders": [
+ "trustedFolders": [
  "/home/user/projects",
  "/home/user/copilot-workshop"
  ]
@@ -341,7 +341,7 @@ You understand YOLO mode's power and risks.
  ```
  /list-dirs
  ```
- You'll see only the **working directory** and `/tmp` — not the `trusted_folders` entries.
+ You'll see only the **working directory** and `/tmp` — not the `trustedFolders` entries.
 
 7. Grant runtime access to an additional directory:
  > Note: Create the directory first (e.g., `mkdir -p /tmp/safe-dir`).
@@ -357,7 +357,7 @@ You understand YOLO mode's power and risks.
  ```
 
 **Expected Outcome:**
-You understand that `trusted_folders` controls the **startup trust prompt**, while `/add-dir`, `/list-dirs`, and `--add-dir` control **runtime file access** — and that these are two independent permission layers.
+You understand that `trustedFolders` controls the **startup trust prompt**, while `/add-dir`, `/list-dirs`, and `--add-dir` control **runtime file access** — and that these are two independent permission layers.
 
 ### Exercise 7: Creating a Safe Automation Script
 

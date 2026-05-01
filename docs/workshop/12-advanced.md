@@ -21,7 +21,7 @@
 ```
 Environment Variables
  ↓
-XDG_CONFIG_HOME (~/.copilot)
+COPILOT_HOME (~/.copilot)
  ↓
 Repository Configuration
  ↓
@@ -116,6 +116,41 @@ Use `--effort` as a shorthand alias for `--reasoning-effort` to control model re
 > - `time_to_first_chunk` metric tracks latency from request to first streaming chunk
 > - Improved span attributes for debugging agent behavior and performance
 
+#### Custom Model Providers (BYOK)
+
+> Copilot CLI supports Bring Your Own Key (BYOK) mode for using custom model providers. Set `COPILOT_PROVIDER_BASE_URL` to activate BYOK mode. GitHub authentication is not required when using a custom provider.
+>
+> ```bash
+> # Ollama (local, no API key required)
+> COPILOT_PROVIDER_BASE_URL=http://localhost:11434/v1 \
+>   COPILOT_MODEL=deepseek-coder-v2:16b \
+>   copilot
+> ```
+>
+> Run `copilot help providers` for full BYOK documentation including Azure, Anthropic, and OpenAI-compatible providers.
+
+#### Offline Mode
+
+> Set `COPILOT_OFFLINE=true` to enable offline mode. When active, the CLI skips all network access: GitHub authentication, telemetry, web tools, GitHub MCP server, and auto-update are disabled. Requires a local model provider (`COPILOT_PROVIDER_BASE_URL`).
+
+#### `COPILOT_GH_HOST`
+
+> `COPILOT_GH_HOST` overrides the GitHub hostname used by Copilot CLI only, independent of `GH_HOST`. Use this when `GH_HOST` points to a GitHub Enterprise Server instance but Copilot CLI needs to authenticate against github.com or a GHEC data residency hostname.
+
+#### Help Topics
+
+> Run `copilot help <topic>` without starting a session to access built-in documentation:
+>
+> | Topic | Content |
+> |-------|---------|
+> | `commands` | Interactive mode commands |
+> | `config` | Configuration settings |
+> | `environment` | Environment variables |
+> | `logging` | Logging configuration |
+> | `monitoring` | OpenTelemetry monitoring |
+> | `permissions` | Tool, URL, and path permissions |
+> | `providers` | Custom model providers (BYOK) |
+
 ## Hands-On Exercises
 
 ### Exercise 1: Environment Variables
@@ -127,13 +162,13 @@ Use `--effort` as a shorthand alias for `--reasoning-effort` to control model re
 
 **Steps:**
 
-1. **XDG_CONFIG_HOME** - Change config location:
+1. **COPILOT_HOME** - Change config location:
 
  ```bash
  # Set custom config directory
- export XDG_CONFIG_HOME=/custom/path
+ export COPILOT_HOME=/custom/path
 
- # Copilot will now use /custom/path/copilot/
+ # Copilot will now use /custom/path/
  copilot
  ```
 
@@ -146,30 +181,14 @@ Use `--effort` as a shorthand alias for `--reasoning-effort` to control model re
  copilot -p "Run the test suite" --allow-tool 'shell'
  ```
 
-3. **GITHUB_ASKPASS** - Credential helper:
-
- ```bash
- # Create a credential helper script
- cat > ~/credential-helper.sh << 'EOF'
- #!/bin/bash
- echo "$COPILOT_TOKEN"
- EOF
- chmod +x ~/credential-helper.sh
-
- export GITHUB_ASKPASS=~/credential-helper.sh
- export COPILOT_TOKEN="your-token"
-
- copilot
- ```
-
-4. **NO_COLOR** - Disable colored output:
+3. **NO_COLOR** - Disable colored output:
 
  ```bash
  export NO_COLOR=1
  copilot -p "List files"
  ```
 
-5. View effective configuration:
+4. View effective configuration:
 
  ```bash
  copilot --help | head -50
@@ -212,7 +231,7 @@ Environment variables customize Copilot behavior.
 
  - name: Run Code Review
  env:
- GITHUB_TOKEN: ${{ secrets.COPILOT_TOKEN }}
+ COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
  run: |
  copilot -p "Review the changes in this PR and provide feedback" \
  --allow-tool 'shell(git)' \
@@ -246,7 +265,7 @@ Environment variables customize Copilot behavior.
  RUN npm install -g @github/copilot
 
  # Set up config directory
- ENV XDG_CONFIG_HOME=/app/config
+ ENV COPILOT_HOME=/app/config
 
  WORKDIR /workspace
 
@@ -379,9 +398,8 @@ Full command-line control over Copilot behavior.
  # Start Copilot in autopilot mode
  copilot --autopilot
 
- # Or use /autopilot command in an active session
- copilot
- /autopilot on
+ # Or use Shift+Tab to cycle modes in an active session
+ # (chat → edit → autopilot)
  ```
 
  > **Permission elevation:** When accepting a plan with autopilot, Copilot shows a permission elevation dialog to prevent auto-denied tool errors during autonomous execution.
@@ -412,12 +430,11 @@ Full command-line control over Copilot behavior.
  # ✓ Created src/middleware/errorHandler.js
  ```
 
-6. **Disable Autopilot mid-session:**
+6. **Switch out of Autopilot mid-session:**
 
- ```bash
- # In an active session
- /autopilot off
+ Use `Shift+Tab` to cycle back to chat or edit mode, or press `Esc` to interrupt the current autonomous operation.
 
+ ```
  # Now you'll be prompted for approval on each action
  ```
 
@@ -805,7 +822,7 @@ Language server timeouts are configured for your environment, eliminating timeou
 
  ```json
  {
- "trusted_folders": [
+ "trustedFolders": [
  "/home/user/projects",
  "/home/user/work"
  ],
@@ -819,7 +836,7 @@ Language server timeouts are configured for your environment, eliminating timeou
 
  ```bash
  # Using jq to update config
- jq '.trusted_folders += ["/new/path"]' ~/.copilot/config.json > tmp.json
+ jq '.trustedFolders += ["/new/path"]' ~/.copilot/config.json > tmp.json
  mv tmp.json ~/.copilot/config.json
  ```
 
@@ -827,11 +844,11 @@ Language server timeouts are configured for your environment, eliminating timeou
 
  ```json
  {
- "allowed_urls": [
+ "allowedUrls": [
  "https://api.github.com/*",
  "https://docs.github.com/*"
  ],
- "denied_urls": [
+ "deniedUrls": [
  "https://evil.com/*"
  ]
  }
@@ -1210,7 +1227,7 @@ You can run deep-research workflows and extract insights from your session histo
 | `/review` | Run code review agent |
 | `/delegate` | Hand off to cloud agent |
 | `/fleet` | Launch parallel sub-agents for complex tasks |
-| `/autopilot on\|off` | Toggle autopilot mode |
+| `Shift+Tab` | Cycle through chat / edit / autopilot modes |
 | `/research` | Launch deep-research workflow with exportable reports |
 | `/chronicle` | Session-history insights (standup, tips, improve) — experimental |
 | `/diagnose` | Show diagnostic summary of session and environment |

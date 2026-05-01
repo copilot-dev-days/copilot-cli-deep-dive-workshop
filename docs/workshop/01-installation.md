@@ -70,6 +70,24 @@ Inside an interactive session, use these commands:
 | `/changelog last 5` | Show the last 5 release changelogs |
 | `/changelog summarize` | Get an AI-generated summary of recent changes |
 
+### Shell Completion
+
+Enable tab completion for `copilot` subcommands and flags:
+
+```bash
+# Bash (current session)
+source <(copilot completion bash)
+
+# Bash (persistent, Linux)
+copilot completion bash | sudo tee /etc/bash_completion.d/copilot
+
+# Zsh — write to a directory on your $fpath, then restart the shell
+copilot completion zsh > "${fpath[1]}/_copilot"
+
+# Fish
+copilot completion fish > ~/.config/fish/completions/copilot.fish
+```
+
 ## Hands-On Exercises
 
 ### Exercise 1a: Install via Script (Quick Method) - Recommended option
@@ -304,10 +322,14 @@ source ~/.bashrc
 3. Export the token:
 
  ```bash
- export GH_TOKEN="ghp_your_token_here"
+ export COPILOT_GITHUB_TOKEN="github_pat_your_token_here"
  # or
- export GITHUB_TOKEN="ghp_your_token_here"
+ export GH_TOKEN="github_pat_your_token_here"
+ # or
+ export GITHUB_TOKEN="github_pat_your_token_here"
  ```
+
+ > **Note:** Supported token types include fine-grained PATs (with "Copilot Requests" permission), OAuth tokens from the GitHub Copilot CLI app, and OAuth tokens from the GitHub CLI (`gh`) app. **Classic personal access tokens (`ghp_`) are not supported.**
 
 4. Start Copilot CLI — it will authenticate automatically without a browser
 
@@ -333,6 +355,8 @@ This stores credentials separately from github.com, allowing you to connect to y
 - ✅ Use `--binary-version` to check the installed version without launching
 - ✅ Use `/version` and `/changelog` inside sessions for version info
 - ✅ `/logout` warns when credential source is external (gh CLI, PAT, env var)
+- ✅ Shell completion available for bash, zsh, and fish via `copilot completion`
+- ✅ Classic PATs (`ghp_`) are not supported — use fine-grained PATs with "Copilot Requests" permission
 
 ## Next Steps
 

@@ -105,7 +105,7 @@ Slash commands are prefixed with `/` and provide quick access to CLI features wi
 | **Sharing** | `/share`, `/share html`, `/feedback`, `/copy` | Export sessions, copy responses, and submit feedback |
 | **Account** | `/login`, `/logout`, `/user` | Authentication and user management |
 | **IDE** | `/ide` | Connect to IDE workspace |
-| **System** | `/help`, `/exit`, `/quit`, `/init`, `/tasks`, `/lsp`, `/update`, `/restart`, `/changelog`, `/chronicle` | General utilities and productivity |
+| **System** | `/help`, `/exit`, `/quit`, `/init`, `/tasks`, `/sidekicks`, `/lsp`, `/update`, `/restart`, `/changelog`, `/chronicle`, `/search`, `/keep-alive` | General utilities and productivity |
 
 #### Keyboard Shortcuts
 
@@ -141,7 +141,7 @@ In addition to slash commands, Copilot CLI supports keyboard shortcuts:
 | `ctrl+d` | Exit prompt (no longer queues a message; use `Ctrl+Q` or `Ctrl+Enter` to queue) |
 | `Home` / `End` | Navigate within visual line; jump to top/bottom of scroll buffer |
 | `ctrl+Home` / `ctrl+End` | Jump to text boundaries |
-| `Shift+Tab` | Cycle through modes — (chat) ⟷ (edit); use `!` for shell mode |
+| `Shift+Tab` | Cycle through modes — (chat) ⟷ (edit) |
 | `Shift+Enter` | Insert newline in prompt (requires kitty keyboard protocol) |
 | `Page Up` / `Page Down` | Scroll |
 | `Double-click` | Select word |
@@ -198,6 +198,9 @@ Some commands are covered in depth in later modules (`/mcp` in Module 5, `/skill
 | `/allow-all [on\|off\|show]` | Enable, disable, or check allow-all (YOLO) mode |
 | `/share html` | Export session as a self-contained interactive HTML file |
 | `/mcp auth` | Re-authenticate MCP OAuth servers with account switching support |
+| `/sidekicks` | View running sidekick agents |
+| `/keep-alive [on\|off\|busy]` | Manage keep-alive mode — prevents system sleep while session is active |
+| `/search` | Search the conversation timeline |
 
 #### New Commands
 
@@ -212,14 +215,19 @@ Some commands are covered in depth in later modules (`/mcp` in Module 5, `/skill
 
 | Flag | Description |
 | --- | --- |
-| `--mode <mode>` | Start CLI directly in a specific mode (chat, edit) |
+| `--mode <mode>` | Start CLI directly in a specific mode (`interactive`, `plan`, `autopilot`) |
 | `--autopilot` | Start CLI directly in autopilot mode |
 | `--plan` | Start CLI directly in plan mode |
+| `-n, --name <name>` | Set a name for the new session |
+| `--connect[=sessionId]` | Connect directly to a remote session (optionally specify session ID or task ID) |
 | `--remote` | Start a remote control session |
+| `--enable-reasoning-summaries` | Request reasoning summaries for OpenAI models |
 
 > `/research` and `/chronicle` are experimental. `/chronicle` subcommands (`standup`, `tips`, `improve`) and behavior are subject to change.
 
 > **Remote control** lets you observe and control sessions remotely. Use the `--remote` flag or `/remote` command to start a remote control session, allowing another Copilot CLI instance to connect.
+
+> **Tip:** Run `copilot help commands` from your shell to see the full interactive command list without starting a session.
 
 ## Hands-On Exercises
 
