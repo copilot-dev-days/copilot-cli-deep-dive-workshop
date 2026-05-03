@@ -141,3 +141,6 @@ vite.config.ts.timestamp-*
 # Workshop
 tryout
 .trees
+
+# Tmux
+.devcontainer/.tmux-shared

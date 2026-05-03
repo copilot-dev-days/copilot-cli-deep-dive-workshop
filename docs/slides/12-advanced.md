@@ -88,10 +88,9 @@ copilot --autopilot --max-autopilot-continues 10
 copilot --autopilot --no-ask-user --allow-all-tools
 ```
 
-Or toggle mid-session:
+Or cycle modes mid-session with `Shift+Tab`:
 ```
-/autopilot on
-/autopilot off
+chat → edit → autopilot
 ```
 
 - **Permission elevation** — shows dialog to prevent auto-denied tool errors
@@ -132,7 +131,7 @@ Your Prompt → Orchestrator
 # .github/workflows/copilot-review.yml
 - name: Run Code Review
  env:
- COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_TOKEN }}
+ COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
  run: |
  copilot -p "Review PR changes" \
  --allow-tool 'shell(git)' \
@@ -157,7 +156,7 @@ Key flags for automation: `--silent`, `--allow-tool`, `--deny-tool`
 copilot --bash-env
 
 # Custom config location
-export XDG_CONFIG_HOME=/custom/path
+export COPILOT_HOME=/custom/path
 
 # Auth tokens (in order of precedence)
 export COPILOT_GITHUB_TOKEN="ghp_..." # highest priority

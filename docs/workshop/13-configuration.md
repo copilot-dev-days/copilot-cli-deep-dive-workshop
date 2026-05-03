@@ -50,16 +50,20 @@ All options below are set in ~/.copilot/config.json:
   "includeCoAuthoredBy": true,
   "updateTerminalTitle": true,
   "logLevel": "default",
+  "keepAlive": "off",
+  "continueOnAutoMode": false,
+  "respectGitignore": true,
+  "disableAllHooks": false,
   "ide": {
-    "auto_connect": true,
-    "open_diff_on_edit": true
+    "autoConnect": true,
+    "openDiffOnEdit": true
   },
-  "custom_agents": {
-    "default_local_only": false
+  "customAgents": {
+    "defaultLocalOnly": false
   },
-  "trusted_folders": [],
-  "allowed_urls": [],
-  "denied_urls": [],
+  "trustedFolders": [],
+  "allowedUrls": [],
+  "deniedUrls": [],
   "companyAnnouncements": []
 }
 ```
@@ -83,13 +87,19 @@ All options below are set in ~/.copilot/config.json:
 | `includeCoAuthoredBy` | bool | `true` | Instruct agent to add Co-authored-by trailer to git commits |
 | `updateTerminalTitle` | bool | `true` | Show current intent in terminal title bar |
 | `logLevel` | string | `"default"` | Log level: `"none"`, `"error"`, `"warning"`, `"info"`, `"debug"`, `"all"` |
-| `ide.auto_connect` | bool | `true` | Auto-connect to IDE workspace on startup |
-| `ide.open_diff_on_edit` | bool | `true` | Open file edit diffs in connected IDE for approval |
-| `custom_agents.default_local_only` | bool | `false` | Default to local agents only (skip remote org/enterprise agents) |
-| `trusted_folders` | array | `[]` | Folders granted read/execute permission |
-| `allowed_urls` | array | `[]` | URLs/domains allowed without prompting (supports wildcards like `*.github.com`) |
-| `denied_urls` | array | `[]` | URLs/domains denied access (takes precedence over allowed) |
+| `keepAlive` | string | `"off"` | Prevent system sleep: `"off"`, `"on"`, or `"busy"` (busy = only while agent is working) |
+| `continueOnAutoMode` | bool | `false` | Auto-switch to auto mode on rate limit errors; does not apply to global limits |
+| `respectGitignore` | bool | `true` | Exclude gitignored files from the `@` file mention picker |
+| `disableAllHooks` | bool | `false` | Disable all hooks (repo-level and user-level) |
+| `ide.autoConnect` | bool | `true` | Auto-connect to IDE workspace on startup |
+| `ide.openDiffOnEdit` | bool | `true` | Open file edit diffs in connected IDE for approval |
+| `customAgents.defaultLocalOnly` | bool | `false` | Default to local agents only (skip remote org/enterprise agents) |
+| `trustedFolders` | array | `[]` | Folders granted read/execute permission |
+| `allowedUrls` | array | `[]` | URLs/domains allowed without prompting (supports wildcards like `*.github.com`) |
+| `deniedUrls` | array | `[]` | URLs/domains denied access (takes precedence over allowed) |
 | `companyAnnouncements` | array | `[]` | Custom startup messages (one randomly selected per session) |
+| `statusLine` | object | (none) | Custom status line config with `type`, `command`, and optional `padding` |
+| `powershellFlags` | array | `["-NoProfile", "-NoLogo"]` | Flags passed to PowerShell (pwsh) on startup (Windows only) |
 
 ### Environment Variables Reference
 
@@ -106,15 +116,22 @@ All options below are set in ~/.copilot/config.json:
 | `COPILOT_EDITOR` | Editor for interactive editing (plan, prompts) | Highest (over VISUAL, EDITOR) |
 | `VISUAL` | Editor fallback | Middle |
 | `EDITOR` | Editor fallback | Lowest |
+| `COPILOT_OFFLINE` | Set "true" for offline mode (skips auth, telemetry, web; requires BYOK provider) | -- |
+| `COPILOT_GH_HOST` | GitHub hostname for Copilot CLI only (overrides GH_HOST) | -- |
+| `GH_HOST` | GitHub hostname for auth and API requests (for GHEC data residency) | -- |
+| `COPILOT_PROVIDER_BASE_URL` | API endpoint URL for custom model provider (activates BYOK mode) | -- |
+| `COPILOT_PROVIDER_TYPE` | Provider type: "openai" (default), "azure", or "anthropic" | -- |
+| `COPILOT_PROVIDER_API_KEY` | API key for custom provider | -- |
 | `PLAIN_DIFF` | Set "true" to disable rich diff rendering | -- |
 | `USE_BUILTIN_RIPGREP` | Set "false" to use PATH ripgrep instead of bundled | -- |
 | `NO_COLOR` | Disable colored output (standard convention) | -- |
 | `COLORFGBG` | Fallback for dark/light background detection ("fg;bg" format) | -- |
-| `GH_HOST` | Override GitHub API hostname (for GHEC data residency) | -- |
 | `HTTP_PROXY` | HTTP proxy URL for network requests | -- |
 | `HTTPS_PROXY` | HTTPS proxy URL for network requests | -- |
 | `NO_PROXY` | Comma-separated hosts to bypass proxy | -- |
 | `CI`, `BUILD_NUMBER`, `RUN_ID`, `SYSTEM_COLLECTIONURI` | CI environment detection (disables auto-update) | -- |
+
+> **Tip:** Run `copilot help environment` for the complete, up-to-date list of environment variables, including all `COPILOT_PROVIDER_*` and `OTEL_*` variables.
 
 ### CLI Flags Quick Reference
 
@@ -124,9 +141,13 @@ All options below are set in ~/.copilot/config.json:
 | `-i, --interactive <prompt>` | Interactive mode with auto-executed prompt |
 | `-s, --silent` | Output only agent response (no stats) |
 | `-v, --version` | Show version information |
+| `-n, --name <name>` | Set a name for the new session |
 | `--model <model>` | Set AI model |
 | `--reasoning-effort <level>` | Set reasoning effort level for model |
+| `--effort <level>` | Shorthand for `--reasoning-effort` |
 | `--binary-version` | Query CLI binary version without launching |
+| `--enable-reasoning-summaries` | Request reasoning summaries for OpenAI models |
+| `--connect[=sessionId]` | Connect directly to a remote session |
 
 ### The `/env` Command
 
@@ -304,16 +325,16 @@ You can control Copilot behavior via environment variables and understand their 
    ```json
    {
      "ide": {
-       "auto_connect": true,
-       "open_diff_on_edit": true
+       "autoConnect": true,
+       "openDiffOnEdit": true
      }
    }
    ```
 
-   - `auto_connect: false` prevents auto-connecting to IDEs on startup
-   - `open_diff_on_edit: false` shows file diffs in terminal only, not in IDE
+   - `autoConnect: false` prevents auto-connecting to IDEs on startup
+   - `openDiffOnEdit: false` shows file diffs in terminal only, not in IDE
 
-4. Test the difference: with `open_diff_on_edit: true`, ask Copilot to edit a file and observe the diff opening in VS Code.
+4. Test the difference: with `openDiffOnEdit: true`, ask Copilot to edit a file and observe the diff opening in VS Code.
 
 **Expected Outcome:**
 You understand how Copilot integrates with IDEs and can customize the behavior.
@@ -389,8 +410,8 @@ You can configure Copilot for streaming, screen readers, and plain-text environm
      "compactPaste": true,
      "updateTerminalTitle": true,
      "beep": true,
-     "custom_agents": {
-       "default_local_only": false
+     "customAgents": {
+       "defaultLocalOnly": false
      }
    }
    ```
@@ -452,7 +473,7 @@ You can enable detailed logging and understand the log directory structure.
 - ✅ `companyAnnouncements` broadcasts team messages on startup
 - ✅ `includeCoAuthoredBy` auto-adds Co-authored-by to commits
 - ✅ `updateTerminalTitle` shows current intent in terminal title
-- ✅ IDE integration is controlled via `ide.auto_connect` and `ide.open_diff_on_edit`
+- ✅ IDE integration is controlled via `ide.autoConnect` and `ide.openDiffOnEdit`
 - ✅ `/ide` connects to IDE workspaces, `/streamer-mode` hides sensitive info
 - ✅ `/copy` copies last response to clipboard
 - ✅ Environment variables control auth, model, editor, and instruction paths
@@ -466,6 +487,13 @@ You can enable detailed logging and understand the log directory structure.
 - ✅ `/env` command shows loaded environment details
 - ✅ `--config-dir` respected for model selection
 - ✅ `copilot help monitoring` documents OpenTelemetry configuration
+- ✅ `keepAlive` prevents system sleep (off/on/busy)
+- ✅ `continueOnAutoMode` auto-switches to auto mode on rate limits
+- ✅ `respectGitignore` controls `@` picker file filtering
+- ✅ `statusLine` enables custom status line via external command
+- ✅ BYOK support via `COPILOT_PROVIDER_*` env vars — run `copilot help providers` for details
+- ✅ `COPILOT_OFFLINE` enables offline mode with local model providers
+- ✅ `COPILOT_GH_HOST` overrides GitHub hostname for Copilot CLI only
 
 ## Workshop Complete! 🎉
 
@@ -474,7 +502,7 @@ Congratulations on completing the GitHub Copilot CLI Workshop!
 ### What You've Learned
 
 1. **Installation** - Multiple methods to install and authenticate
-2. **Operating Modes** - Interactive, interactive-with-prompt, programmatic, and delegate
+2. **Operating Modes** - Interactive, interactive-with-prompt (`-i`), programmatic (`-p`), and delegate
 3. **Sessions** - Management, persistence, and control
 4. **Instructions** - AGENTS.md, copilot-instructions.md, llm.txt
 5. **Tools** - Permissions, allow/deny, URL access, YOLO mode

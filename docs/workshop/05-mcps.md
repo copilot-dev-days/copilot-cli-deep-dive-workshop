@@ -66,7 +66,7 @@ Use `/mcp show` to check which servers are connected and their current status.
 
 MCP servers are configured in:
 - Default: `~/.copilot/mcp-config.json` (user) or `.mcp.json` (project)
-- Custom: Set via `XDG_CONFIG_HOME`
+- Custom: Set via `COPILOT_HOME`
 
 ### DevContainer MCP Configuration
 
@@ -115,14 +115,23 @@ MCP servers defined in `devcontainer.json` are merged with your personal `~/.cop
 
 ### `copilot mcp` CLI Command — MAJOR
 
-> The new `copilot mcp` top-level command lets you manage MCP servers directly from the command line without starting an interactive session:
+> The `copilot mcp` top-level command lets you manage MCP servers directly from the command line without starting an interactive session:
 >
 > ```bash
 > # List configured MCP servers
 > copilot mcp list
 >
-> # Add an MCP server
-> copilot mcp add <name> --type http --url https://example.com/mcp
+> # Add a local stdio server
+> copilot mcp add context7 -- npx -y @upstash/context7-mcp
+>
+> # Add a remote HTTP server
+> copilot mcp add --transport http notion https://mcp.notion.com/mcp
+>
+> # Add a remote server with auth header
+> copilot mcp add --transport http --header "Authorization: Bearer token" stripe https://mcp.stripe.com
+>
+> # Add a local server with environment variables
+> copilot mcp add github --env GITHUB_PERSONAL_ACCESS_TOKEN=ghp_xxx -- npx -y @modelcontextprotocol/server-github
 >
 > # Remove an MCP server
 > copilot mcp remove <name>
@@ -130,6 +139,8 @@ MCP servers defined in `devcontainer.json` are merged with your personal `~/.cop
 > # Show details for a specific server
 > copilot mcp get <name>
 > ```
+>
+> Additional options for `mcp add`: `--transport` (stdio/http/sse), `--env` (repeatable), `--header` (repeatable), `--timeout`, `--tools` (filter).
 >
 > This is useful for scripting MCP configuration and managing servers in CI/CD environments.
 

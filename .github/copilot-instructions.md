@@ -31,6 +31,7 @@ WORKSHOP_FLOW: "Installation (01) -> Core Concepts (02-05) -> Advanced (06-13)"
 WORKSHOP_DURATION: "~4.5 hours"
 MODULE_COUNT: 13
 SLIDE_SYNC_RULE: "When modifying docs/workshop/NN-*.md, always check and update docs/slides/NN-*.md"
+VALIDATED_CLI_VERSION: "1.0.39"
 
 DOCKER_SETUP: TEXT
 docker run -it --name copilot-workshop \
@@ -45,6 +46,7 @@ source ~/.bashrc && nvm install --lts
 CONVENTIONS: TEXT
 - Module structure: each module follows Goal, Steps, Expected Outcome format
 - Versionless documentation: describe current behavior as absolute and timeless; never reference version numbers
+- Version tracking: VALIDATED_CLI_VERSION in copilot-instructions.md is the single source of truth; the README badge is derived from it
 - Docker container: named copilot-workshop with tryout/ mounted at /workspace
 >>
 
