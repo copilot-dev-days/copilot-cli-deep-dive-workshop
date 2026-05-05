@@ -22,6 +22,7 @@ agents:
   - slide-sync-checker
   - exercise-linter
   - workshop-runner
+  - landing-page-sync
 ---
 
 <instructions>
@@ -58,7 +59,8 @@ SUBAGENTS: JSON<<
   "lint": "@exercise-linter",
   "runner": "@workshop-runner",
   "slides": "@slide-sync-checker",
-  "xref": "@cross-reference-validator"
+  "xref": "@cross-reference-validator",
+  "landing": "@landing-page-sync"
 }
 >>
 
@@ -128,6 +130,7 @@ XREF_RESULT: ""
 SLIDES_RESULT: ""
 LINT_RESULT: ""
 RUNNER_RESULT: ""
+LANDING_RESULT: ""
 PHASES_COMPLETED: []
 </runtime>
 
@@ -190,6 +193,7 @@ USE `todo` where: complete="Select fixes"
 USE `agent/runSubagent` where: agent=SUBAGENTS.content, prompt=SELECTED_FIXES
 CAPTURE APPLY_RESULT from subagent result
 RUN `phase-stamp-version`
+RUN `phase-sync-landing-page`
 SET CURRENT_PHASE := "validate-light" (from "Agent Inference")
 SET PHASES_COMPLETED := PHASES_COMPLETED + ["apply"] (from "Agent Inference")
 USE `todo` where: complete="Apply changes"
@@ -205,6 +209,12 @@ READ README_FILE
 UPDATE VERSION_BADGE_PATTERN with CURRENT_CLI_VERSION in README_FILE
 UPDATE VERSION_TEXT_PATTERN with CURRENT_CLI_VERSION in README_FILE
 TELL "Stamped VALIDATED_CLI_VERSION to {CURRENT_CLI_VERSION} in copilot-instructions.md and README.md" level=brief
+</process>
+
+<process id="phase-sync-landing-page" name="Sync Landing Page">
+USE `agent/runSubagent` where: agent=SUBAGENTS.landing
+CAPTURE LANDING_RESULT from subagent result
+TELL "Landing page synced with updated workshop content." level=brief
 </process>
 
 <process id="phase-validate-light" name="Phase 4 — Lightweight Validation">
