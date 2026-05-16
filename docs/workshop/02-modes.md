@@ -12,6 +12,7 @@
 - Use `/plan`, `/review`, and `/diff` for structured workflows
 - Use the delegate (`/delegate`) command to hand off to cloud agents
 - Control tool approval during interactions
+- Use interactive mode for rubber duck debugging and clarification
 - Choose the right mode for different scenarios
 
 ## Concepts
@@ -28,6 +29,20 @@ Interactive mode starts a conversational session where you chat with Copilot in 
 ```bash
 # Start interactive mode
 copilot
+```
+
+#### Rubber Duck Debugging in Interactive Mode
+
+Copilot CLI can act as your rubber duck during interactive chat. Describe your problem, assumptions, and expected behavior, then let Copilot ask clarifying questions that help you isolate the root cause.
+
+```
+Rubber duck with me: I expected this script to parse a JSON file, but it fails on some inputs. Ask me one diagnostic question at a time.
+```
+
+If you want to ask a quick side question while keeping your main thread focused, use:
+
+```
+/ask What edge cases should I check for JSON parsing errors?
 ```
 
 ### Interactive-with-Prompt Mode
@@ -395,14 +410,19 @@ You can bootstrap Copilot configuration with `/init`, rename sessions, and confi
  ```
 
 6. Continue the conversation:
- ```
- Add error handling if no argument is provided
- ```
+  ```
+  Add error handling if no argument is provided
+  ```
 
-7. Exit with `/exit` or `Ctrl+C`.
+7. Use a rubber duck prompt to clarify your thinking:
+  ```
+  Rubber duck with me on this script and ask me one diagnostic question at a time.
+  ```
+
+8. Exit with `/exit` or `Ctrl+C`.
 
 **Expected Outcome:**
-A Python script evolves through multiple iterations with your guidance.
+A Python script evolves through multiple iterations with your guidance, and you can use interactive conversation to reason through problems step by step.
 
 ### Exercise 5: Tool Approval Workflow
 

@@ -94,6 +94,28 @@ Perfect for: learning, debugging, iterating
 
 ---
 
+## Rubber Duck in Interactive Mode
+
+Use Copilot as a thinking partner to clarify problems step by step
+
+```
+copilot
+```
+
+```
+> Rubber duck with me: I expected this script to parse JSON,
+> but it fails on some inputs. Ask one diagnostic question at a time.
+```
+
+```
+# Optional side question without adding to session context
+/ask What JSON edge cases should I test first?
+```
+
+Outcome: clearer reasoning, better hypotheses, faster debugging
+
+---
+
 ## Programmatic Mode
 
 **One prompt, one answer, done.**
@@ -203,4 +225,3 @@ Open **Module 2** in `docs/workshop/02-modes.md`
 - **Exercise 8–9** — Delegate & comparing modes
 
 ⏱️ You have **~16 minutes**
-
