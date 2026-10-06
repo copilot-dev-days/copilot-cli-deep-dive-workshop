@@ -388,12 +388,15 @@ Use `/env` inside an interactive session to see a comprehensive view of the load
 /env
 ```
 
-This displays:
+This displays all eight loaded environment kinds:
 - Active instruction files and their sources
 - Loaded MCP servers and their status
 - Available skills (project, personal, built-in)
+- Available agents
+- Loaded hooks
 - Installed plugins
-- Current model and configuration directory
+- Configured LSP servers
+- Loaded extensions
 
 ### The `copilot app` Subcommand
 

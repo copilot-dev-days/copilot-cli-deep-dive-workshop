@@ -111,6 +111,17 @@ Available models and context windows depend on your subscription and selected mo
 
 ---
 
+## Context References & Autocomplete
+
+- Type `@` to autocomplete project files; select one to include its contents
+- `@relative`, `@/absolute`, `@~/home`, and `@../parent` paths are supported
+- Type `#` to autocomplete GitHub **issues, pull requests, and discussions**
+- Use `#123` when the number is unambiguous; the picker resolves repository context
+
+> References are targeted context: prefer them over asking the agent to scan an entire tree.
+
+---
+
 ## Context-Efficient Prompting
 
 **❌ Wasteful:**

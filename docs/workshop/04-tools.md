@@ -33,7 +33,7 @@ Copilot CLI registers a set of built-in tools in every session:
 | `task` / `read_agent` / `write_agent` / `list_agents` | Delegate work to subagents and exchange messages with them | Varies |
 | `skill` | Load a skill's instructions on demand | Low |
 | `sql` / `session_store_sql` | Query the agent's session database (to-do list, session history) | Low |
-| `run_factory` | Run parallel agent factories (used by fleet mode) | Varies |
+| `run_dynamic_workflow` / `dynamic_workflows_manage` | Register and run dynamic workflows (also available from the shell as `copilot workflow run`) | Varies |
 | `ask_user` | Ask you a clarifying question (interactive sessions; disable with `--no-ask-user`) | Low |
 | MCP server tools | Tools contributed by configured MCP servers, prefixed with the server name | Varies |
 
@@ -118,7 +118,7 @@ You can also start a session with sandboxing already on by passing `--sandbox` a
 copilot --experimental --sandbox -p "Run the test suite and summarize failures"
 ```
 
-Because sandboxing is experimental, `--sandbox` needs `--experimental` alongside it (or experimental features already enabled in settings). Without that, Copilot prints a warning and ignores the flag for the session.
+Because sandboxing is experimental, `--sandbox` needs `--experimental` alongside it (or experimental features already enabled in settings). Without that, Copilot prints a warning and ignores the flag for the session. `--sandbox` is not listed in `copilot --help`; `copilot help sandbox` is its reference.
 
 Sandboxing can therefore already be active at session start from `--sandbox`, a saved `sandbox.enabled` setting, or an organization policy. If the host cannot run the sandbox backend in that situation, Copilot prints a startup warning and sandboxed commands fail.
 
@@ -634,7 +634,7 @@ copilot -p "Fix all linting errors" --allow-all-tools --no-ask-user
 | `/permissions [manual\|assisted\|allow-all\|show]` | Switch permission modes, or show the current one (`assisted` requires the experimental auto-approval feature) |
 | `/allow-all` | Enable all permissions (tools, paths, and URLs) |
 | `/reset-allowed-tools` | Reset the list of tools approved during the session |
-| `/add-dir <path>` | Add a trusted directory for the session (supports relative paths like `./src`, `../sibling`) |
+| `/add-dir <path>` | Grant runtime file access to a directory for the current session; this does not add it to startup `trustedFolders` (supports relative paths like `./src`, `../sibling`) |
 | `/list-dirs` | View accessible directories |
 | `/sandbox [enable\|disable]` | Show or change command sandboxing (registered when experimental features are on, or when a policy forces sandboxing on) |
 

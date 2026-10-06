@@ -121,7 +121,49 @@ Your Prompt → Orchestrator
  Consolidated output
 ```
 
-> Orchestrator validates sub-agent work, parallel dispatch (9+ concurrent agents)
+> Orchestrator validates sub-agent work and runs a **bounded multiple** of
+> subagents concurrently; settings and account limits cap parallelism.
+
+---
+
+## PRs, Background Agents & Experiments
+
+- `/pr` creates/views PRs and can fix CI failures, review feedback, and conflicts
+- `/pr view local` shows local status; `/pr view web` opens the browser
+- Background tasks appear in the timeline with expandable notifications
+- `write_agent` continues a multi-turn conversation; `read_agent` includes the
+  inbound messages that triggered each turn
+- Background agents receive human-readable task IDs
+- `/experimental on|off` restarts the CLI automatically to apply the change
+
+---
+
+## Monorepos & Monitoring
+
+- Instructions, MCP servers, skills, and agents are discovered from the working
+  directory up to the git root — including nested monorepo levels
+- `copilot help monitoring` documents OpenTelemetry exporters and attributes
+- Monitoring includes internal subagent spans and `time_to_first_chunk` latency
+
+Use `copilot help monitoring` for exporter setup; Module 13 groups the OpenTelemetry environment families.
+
+---
+
+## ACP Clients & MCP Injection
+
+ACP clients can provide MCP server configuration while starting or loading a
+session. IDE integrations use this to inject client-specific tools without
+changing personal MCP configuration.
+
+---
+
+## Status Line & Startup UI
+
+- `statusLine` can run a custom shell command; `/statusline` configures it
+- Startup shows environment loading progress
+- Narrow terminals switch the footer to a responsive two-line layout
+- Independent tool calls execute in parallel automatically
+- `copilot --help` keeps flags sorted and includes descriptions and examples
 
 ---
 
@@ -184,6 +226,7 @@ export COPILOT_HOME=/custom/path
 export COPILOT_GITHUB_TOKEN="github_pat_..." # highest priority
 export GH_TOKEN="github_pat_..."
 export GITHUB_TOKEN="github_pat_..." # lowest priority
+export COPILOT_GH_HOST="github.example.com" # CLI-specific GitHub host
 ```
 
 ---
@@ -202,6 +245,20 @@ COPILOT_PROVIDER_BASE_URL=http://localhost:11434/v1 \
 **Offline mode** — `COPILOT_OFFLINE=true` skips all network access: GitHub authentication, telemetry, web tools, GitHub MCP server, and auto-update are disabled. Requires a local model provider.
 
 > `copilot help providers` documents Azure, Anthropic, and OpenAI-compatible providers
+
+---
+
+## Additional Runtime Controls
+
+```bash
+copilot --no-bash-env                  # do not source BASH_ENV
+copilot --enable-memory                # memory in prompt mode
+copilot --allow-all-mcp-server-instructions
+copilot --mouse off                    # or --no-mouse
+```
+
+Use `/diagnose` for a guided troubleshooting check; pair it with
+`/collect-debug-logs`, `copilot help logging`, and `copilot help monitoring`.
 
 ---
 
@@ -248,7 +305,6 @@ copilot --max-ai-credits 30        # minimum is 30
 ```
 /limits                            # interactive dialog
 /limits set max-ai-credits 50
-/limits predict
 /limits unset max-ai-credits
 ```
 
@@ -263,10 +319,20 @@ copilot --max-ai-credits 30        # minimum is 30
 
 alias cop='copilot'
 alias cop-analyze='copilot --deny-tool write'
-alias cop-safe='copilot --allow-tool "shell(cat)" --deny-tool write'
+alias cop-safe='copilot --allow-tool "shell(cat)" --allow-tool "shell(grep)" --deny-tool write'
 alias cop-yolo='copilot --yolo'
-alias cop-resume='copilot --resume'
+alias cop-resume='copilot --continue'
 ```
+
+---
+
+## Team Workflow Patterns
+
+- Commit shared guidance in `.github/copilot-instructions.md`
+- Layer directory-specific rules with `AGENTS.md` and `.github/instructions/`
+- Share instructions, skills, agents, hooks, MCP, and LSP config with the repo
+- Use least-privilege rules and policy-approved marketplaces
+- Standardize CI prompts and save usage output for auditability
 
 ---
 

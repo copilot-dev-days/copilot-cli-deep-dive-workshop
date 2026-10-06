@@ -133,7 +133,7 @@ Hooks support three permission decisions in `preToolUse`:
 
 > Hook and plugin scripts receive:
 > - `PLUGIN_ROOT`, `COPILOT_PLUGIN_ROOT`, `CLAUDE_PLUGIN_ROOT` — the plugin's installation directory
-> - `COPILOT_PLUGIN_DATA`, `CLAUDE_PLUGIN_DATA` — the plugin's writable data directory
+> - `COPILOT_PLUGIN_DATA`, `CLAUDE_PLUGIN_DATA`, `PLUGIN_DATA` — the plugin's writable data directory
 > - `COPILOT_PROJECT_DIR`, `CLAUDE_PROJECT_DIR` — the project root
 >
 > This lets hook scripts packaged with plugins reference sibling files reliably. Individual discovered hooks can be suppressed with the `disabledHooks` setting; `disableAllHooks` turns off both repository and personal hooks.
@@ -831,7 +831,7 @@ All tool executions are logged with results:
 
 ```json
 {
-  "permissionDecision": "allow|deny",
+  "permissionDecision": "allow|deny|ask",
   "permissionDecisionReason": "Explanation shown to user"
 }
 ```

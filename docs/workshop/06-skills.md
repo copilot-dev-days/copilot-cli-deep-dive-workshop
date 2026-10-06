@@ -49,7 +49,7 @@ Level 3: Resources → Copilot accesses supporting files (as needed)
 > - `discover-resources` — finding a public MCP server or public skill you could add for an unavailable external capability, such as database access, accessible PDF reports, cloud costs, or architecture diagrams
 > - `github-pr-media` — uploading an image or video to GitHub's user attachments API and embedding it in a pull request description or comment
 >
-> Built-in skills are listed alongside project and personal skills in the `/skills` view. `copilot plugins list --kind skill` is the fuller inventory: `copilot skill list` shows `customize-cloud-agent` and `github-pr-media` but omits `discover-resources`, so check both when auditing what is available. Built-in skills cannot be deleted with `copilot skill remove`, but they can be disabled with `copilot plugins disable <name> --skill` from the shell, or from the `/plugin` dashboard inside a session, and a project or personal skill with the same name overrides the built-in.
+> Built-in skills are listed alongside project and personal skills in the `/skills` view and in `copilot skill list`, which groups skills by source. `discover-resources` is reserved for the runtime discovery search and is not offered as a user-selectable skill, so it does not appear in that listing. Built-in skills cannot be deleted with `copilot skill remove`, but they can be turned off with `copilot skill disable <name>` from the shell or from the `/skills` view inside a session, and a project or personal skill with the same name overrides the built-in.
 
 ### Managing Skills from the Shell
 
@@ -75,6 +75,10 @@ copilot skill list --json
 # Remove a personal or project skill by name, or unregister a custom directory
 copilot skill remove my-skill
 copilot skill remove ~/my-custom-skills
+
+# Turn a discovered skill off or back on without removing it
+copilot skill disable my-skill
+copilot skill enable my-skill
 ```
 
 Skills provided by a plugin or by the built-in set cannot be removed this way — disable them instead.

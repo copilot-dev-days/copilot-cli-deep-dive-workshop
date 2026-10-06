@@ -90,11 +90,14 @@ copilot    prompts + tools    /exit or Ctrl+C
 |---------|-------------|
 | `/session` | Show session info (ID, duration, files) |
 | `/usage` | Token consumption and API calls |
+| `/model` | Switch the active model |
 | `/rename NAME` | Name your session for easy finding |
 | `/clear` | Abandon session and start fresh (session is discarded) |
 | `/new` | Start new conversation (old session stays backgrounded) |
 | `/resume` | Switch to a previous session (picker, or pass ID/name) |
 | `--continue` | Resume the most recent session from CLI |
+| `--remote` / `/remote` | Enable web/mobile remote control |
+| `--remote-export` | Export read-only to GitHub web/mobile |
 | `/share` | Export the session you're in (markdown, HTML, gist, or link) |
 | `/rewind` (alias `/undo`) | Rewind the last turn and revert file changes |
 | `/exit` | Exit the CLI; `/exit print` prints the session after exiting alt screen |
@@ -114,6 +117,7 @@ copilot -p "Explain this repo" --share ./out.md
 copilot -p "Explain this repo" --share-gist
 ```
 
+> `/share html` prints a `file://` URL; press `Ctrl+X O` to open it.
 > `--share` / `--share-gist` share **that run's own** session once it completes —
 > they cannot export a conversation from an earlier session
 
@@ -126,15 +130,37 @@ copilot -p "Explain this repo" --share-gist
 | `~/.copilot/session-state/<id>/` | Transcript, checkpoints, rewind snapshots |
 | `~/.copilot/session-store.db` | Index used by `/session`, `/resume`, `--resume` |
 
+`COPILOT_HOME` relocates the Copilot state directory, including session storage.
+
 Manage it with subcommands, not `rm`:
 
 ```
 /session info          # details about this session
 /session checkpoints   # list checkpoints
 /session files         # files touched
+/session plan          # current plan
+/session rename [name] # rename or auto-name
+/session cleanup       # remove stale records
 /session prune         # prune old session data
+/session delete [id]   # delete one session
 /session delete-all    # delete every session
 ```
+
+---
+
+## Resume & Identity Flags
+
+```bash
+copilot -n "auth-fix"                 # name a new session
+copilot --session-id <uuid>           # resume/set exact ID
+copilot --resume[=<id|prefix|name>]   # picker when value omitted
+copilot --continue                    # most recent session
+copilot --connect[=<sessionId>]        # connect to remote session
+copilot --remote-export               # read-only web/mobile copy
+copilot -p "Summarize" --silent       # response only, no stats
+```
+
+`--resume` also accepts task IDs and unique ID prefixes.
 
 ---
 

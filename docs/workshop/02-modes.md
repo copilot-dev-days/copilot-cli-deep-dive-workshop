@@ -94,11 +94,11 @@ Slash commands are prefixed with `/` and provide quick access to CLI features wi
 
 | Category | Commands | Purpose |
 | --- | --- | --- |
-| **Session** | `/clear`, `/new`, `/session`, `/resume`, `/rename`, `/fork`, `/usage` | Manage session lifecycle |
+| **Session** | `/clear`, `/new`, `/session`, `/resume`, `/rename`, `/fork`, `/worktree`, `/move`, `/usage` | Manage session lifecycle |
 | **Navigation** | `/cwd`, `/add-dir`, `/list-dirs` | Control directory scope |
 | **Context** | `/context`, `/compact` | Monitor and optimize token usage |
 | **Quick** | `/ask`, `/refine` | Ask a quick question or clean up a rough prompt |
-| **Environment** | `/env` | Show loaded environment details (instructions, MCPs, skills, plugins) |
+| **Environment** | `/env` | Show loaded environment details (instructions, MCP servers, skills, agents, hooks, plugins, LSPs, extensions) |
 | **Tools** | `/permissions`, `/allow-all`, `/reset-allowed-tools` | Manage tool permissions at runtime |
 | **Review** | `/diff`, `/review`, `/rubber-duck`, `/security-review`, `/plan`, `/research`, `/rewind` | Code review, critique, planning, history navigation |
 | **Configuration** | `/model`, `/mcp`, `/plugin`, `/theme`, `/statusline`, `/terminal-setup`, `/experimental`, `/instructions`, `/settings`, `/subagents` | Customize CLI behavior |
@@ -107,7 +107,7 @@ Slash commands are prefixed with `/` and provide quick access to CLI features wi
 | **Sharing** | `/share`, `/share html`, `/feedback`, `/copy` | Export sessions, copy responses, and submit feedback |
 | **Account** | `/login`, `/logout`, `/user` | Authentication and user management |
 | **IDE** | `/ide` | Connect to IDE workspace |
-| **System** | `/help`, `/changelog`, `/exit`, `/init`, `/tasks`, `/lsp`, `/update`, `/restart`, `/version`, `/voice`, `/chronicle`, `/search`, `/keep-alive`, `/limits`, `/diagnose`, `/app` | General utilities and productivity |
+| **System** | `/help`, `/changelog`, `/exit`, `/init`, `/tasks`, `/lsp`, `/update`, `/restart`, `/version`, `/voice`, `/vim`, `/computer`, `/chronicle`, `/search`, `/keep-alive`, `/limits`, `/diagnose`, `/collect-debug-logs`, `/app` | General utilities and productivity |
 
 > [!NOTE]
 > `copilot help commands` does not list every command. The scheduling commands `/after` and `/every` are absent from that listing even though they work in a session, so treat `/help` inside the CLI as the authoritative list.
@@ -190,14 +190,19 @@ Some commands are covered in depth in later modules (`/mcp` in Module 5, `/skill
 | `/user [show\|list\|switch]` | Manage GitHub user list (multi-account support) |
 | `/update` | Update the CLI |
 | `/research [prompt]` | Perform deep research with exportable reports |
-| `/chronicle [standup\|tips\|improve]` | ⚠️ **Experimental** — Productivity insights powered by session history |
+| `/chronicle [standup\|search\|tips\|cost-tips\|improve\|reindex]` | ⚠️ **Experimental** — Productivity insights powered by session history |
 | `/copy` | Copy the last response to the system clipboard |
 | `/ide` | Connect to an IDE workspace (VS Code, etc.) for diagnostics and diff review |
 | `/restart` | Hot restart the CLI while preserving your session |
 | `/version` | Display CLI version and check for updates |
 | `/voice` | Manage voice mode — dictation transcription via Foundry Local |
 | `/rewind` (alias `/undo`) | Rewind the last turn and revert file changes; also available via double-Esc |
-| `/fork [name]` | Fork the current session into a new session, optionally with a name |
+| `/fork [name]` | Fork the current session into a new session, optionally with a name; `/fork worktree` forks into a new worktree based on the current branch |
+| `/worktree` | Create a new git worktree from your configured base ref and switch into it, leaving uncommitted changes behind (`/new worktree` for an empty session) |
+| `/move [branch-or-task]` | Move your uncommitted changes into a new git worktree and switch into it; omit the argument to auto-name it |
+| `/vim` | Toggle Vim mode for the prompt input (motions, operators, counts, `esc` for normal mode) |
+| `/computer` | Show or toggle Computer Use |
+| `/collect-debug-logs` | Collect debug logs to a local `.tgz` file or a secret GitHub gist |
 | `/refine` | Rewrite a rough, stream-of-consciousness prompt into a clear one for review (`ctrl+x → /` then `/refine` cleans up your current input) |
 | `/permissions [manual\|assisted\|allow-all\|show]` | Switch between permission modes, or show the current permission status |
 | `/changelog [summarize]` | Display the changelog for CLI releases; add `summarize` for an AI summary |
@@ -260,7 +265,7 @@ Manage limits from inside a session:
 | Command | Description |
 | --- | --- |
 | `/ask [prompt]` | Ask a quick question without affecting conversation history — response is not added to context |
-| `/env` | Show loaded environment details — lists active instructions, MCPs, skills, and plugins |
+| `/env` | Show loaded environment details — lists active instructions, MCP servers, skills, agents, hooks, plugins, LSPs, and extensions |
 | `/remote` | Start or manage a remote control session |
 | `/diff`, `/agent`, `/feedback`, `/ide` | These commands work while the agent is running — no need to wait for completion |
 
@@ -318,7 +323,7 @@ Use it before opening a pull request or after making authentication, authorizati
 
 The security review focuses on high-confidence security findings rather than general code style.
 
-> `/research` and `/chronicle` are experimental. `/chronicle` subcommands (`standup`, `tips`, `improve`) and behavior are subject to change.
+> `/research` and `/chronicle` are experimental. `/chronicle` subcommands (`standup`, `search`, `tips`, `cost-tips`, `improve`, `reindex`) and behavior are subject to change.
 
 > **Remote control** lets you observe and control sessions remotely. Use the `--remote` flag or `/remote` command to start a remote control session, allowing another Copilot CLI instance to connect.
 

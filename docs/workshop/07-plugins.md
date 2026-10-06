@@ -12,7 +12,7 @@
 - Explore the GitHub copilot-plugins repository
 - Learn about work-iq-mcp and enterprise integrations
 - Install and configure plugins
-- Inspect plugins, MCP servers, and skills with `copilot plugins`
+- Inspect plugins, MCP servers, skills, instructions, and language servers from the shell
 - Understand plugin security considerations
 
 ## Concepts
@@ -50,8 +50,8 @@ Use `/plugin` inside a Copilot CLI session to manage plugins and plugin marketpl
 
 ```
 /plugin
-/plugin install workiq@copilot-plugins
-/plugin marketplace browse copilot-plugins
+/plugin marketplace browse awesome-copilot
+/plugin install arch@awesome-copilot
 ```
 
 Use this path when you are already in a session and want the CLI to guide plugin discovery, installation, marketplace browsing, updates, or removal.
@@ -61,10 +61,13 @@ Use this path when you are already in a session and want the CLI to guide plugin
 Use `copilot plugin` from the shell when you want scriptable plugin management:
 
 ```bash
-# Browse the included marketplaces
+# Browse the included marketplace
 copilot plugin marketplace list
-copilot plugin marketplace browse copilot-plugins
 copilot plugin marketplace browse awesome-copilot
+
+# Register another marketplace, then browse it
+copilot plugin marketplace add github/copilot-plugins
+copilot plugin marketplace browse copilot-plugins
 
 # Install from a marketplace
 copilot plugin install workiq@copilot-plugins
@@ -87,45 +90,56 @@ copilot plugin uninstall workiq
 
 ### Inspecting Resources Across Kinds
 
-`copilot plugins` (plural) is a separate command that inspects and manages plugins, MCP servers, skills, instruction sources, and language servers together, grouped by kind and configuration scope:
+Plugins are one of several kinds of configuration the CLI loads. Each kind has its own
+shell command for listing what is actually in effect, and `copilot plugins` is simply an
+alias for `copilot plugin`:
 
 ```bash
-# Everything configured for this workspace
-copilot plugins list
+# Installed plugins (plus anything mounted with --plugin-dir)
+copilot plugin list
+copilot plugin list --json
 
-# Filter by kind or scope; --json for machine-readable output
-copilot plugins list --kind mcp --kind skill
-copilot plugins list --scope user --json
+# MCP servers from user config, workspace config, and plugins
+copilot mcp list
+copilot mcp get github-mcp-server
 
-# Install a plugin, or a skill for your user account / this project
-copilot plugins install spark@copilot-plugins
-copilot plugins install --skill ./my-skill/SKILL.md
-copilot plugins install --skill --scope project ./my-skill/SKILL.md
+# Skills from project, personal, plugin, and custom directories
+copilot skill list
+copilot skill list --json
 
-# Enable, disable, or remove by kind
-copilot plugins enable github-mcp-server --mcp
-copilot plugins disable my-skill --skill
-copilot plugins remove spark@copilot-plugins
+# Custom instruction sources a session would load
+copilot instruction list
 
-# Browse and manage marketplaces
-copilot plugins marketplace browse copilot-plugins
+# Language servers configured for this CLI
+copilot lsp list
 ```
 
-Supported `--kind` values are `plugin`, `mcp`, `skill`, `instruction`, and `lsp`. Supported `--scope` values are `user`, `session`, `repository`, `working-directory`, `organization`, `plugin`, `builtin`, and `unknown`. Use `--plugin` (the default), `--mcp`, or `--skill` on `enable`, `disable`, `remove`, and `install` to disambiguate names that collide across kinds.
+Enable and disable work per kind, and each change persists to configuration:
+
+```bash
+copilot plugin enable arch@awesome-copilot
+copilot plugin disable arch@awesome-copilot
+copilot mcp disable github-mcp-server
+copilot skill disable my-skill
+```
 
 > [!NOTE]
-> MCP servers are installed from a policy-configured registry, which requires authentication and interactive secret entry, so `copilot plugins install --mcp` is not supported. Add them from the `/plugin` dashboard or `/mcp` instead.
+> MCP servers are installed from a policy-configured registry, which requires
+> authentication and interactive secret entry. Add them from the `/plugin` dashboard,
+> `/mcp`, or `copilot mcp add` rather than through the plugin commands.
 
-The `/plugin` slash command opens the same view as an interactive dashboard; `/plugin --plugin`, `/plugin --mcp`, and `/plugin --skill` open it on that tab, and `/plugin mcp <subcommand>` delegates to `/mcp`.
+Inside a session, `/plugin` opens the interactive plugin dashboard and `/env` prints the
+loaded environment across every kind at once — instructions, MCP servers, skills, agents,
+hooks, plugins, LSP servers, and extensions.
 
 ### Plugin Sources
 
-1. **github/copilot-plugins** - Official GitHub plugins (default marketplace)
-2. **github/awesome-copilot** - Community-curated plugins (default marketplace)
+1. **github/awesome-copilot** - Community-curated plugins (included marketplace)
+2. **github/copilot-plugins** - Official GitHub plugins (add with `copilot plugin marketplace add`)
 3. **microsoft/work-iq-mcp** - Enterprise integrations
 4. **Community plugins** - Third-party extensions
 5. **Custom plugins** - Your own integrations
-6. **Remote sources** - GitHub repos and git URLs referenced in `marketplace.json`
+6. **Direct installation sources** - GitHub repositories, repository subdirectories, and git URLs passed directly to `copilot plugin install`; these are distinct from marketplace references and do not require marketplace registration
 
 ### Plugin Catalog Refresh
 
@@ -148,7 +162,7 @@ This lets hook scripts reference files inside the plugin package, and write stat
 Plugins can declare a post-install message in their manifest. After `copilot plugin install` completes, the message is displayed to the user for setup instructions, configuration requirements, or usage tips.
 
 > [!NOTE]
-> Two marketplaces are included by default and do not need to be added: `copilot-plugins` (github/copilot-plugins) and `awesome-copilot` (github/awesome-copilot). Additional marketplaces can be configured via the `extraKnownMarketplaces` repository setting.
+> One marketplace is included and does not need to be added: `awesome-copilot` (github/awesome-copilot). Register any other marketplace — including `copilot-plugins` (github/copilot-plugins) — with `copilot plugin marketplace add <owner/repo>`. Additional trusted marketplaces can also be configured via the `extraKnownMarketplaces` setting.
 
 ## Hands-On Exercises
 
@@ -163,8 +177,9 @@ Plugins can declare a post-install message in their manifest. After `copilot plu
  https://github.com/github/copilot-plugins
  ```
 
-2. Browse the included plugin marketplace from the CLI:
+2. Register the marketplace, then browse it from the CLI:
  ```bash
+ copilot plugin marketplace add github/copilot-plugins
  copilot plugin marketplace browse copilot-plugins
  ```
 
@@ -206,11 +221,12 @@ You understand the available plugins and their purposes.
  - **Teams messages** — "Summarize today's messages in the Engineering channel"
  - **People** — "Who is working on Project Alpha?"
 
-3. Install via the Copilot CLI plugin marketplace (`github/copilot-plugins` is a **default marketplace** — no need to add it manually):
+3. Install via the Copilot CLI plugin marketplace (register `github/copilot-plugins` first if you have not already — see Exercise 1):
  ```bash
  copilot
  ```
  ```
+ /plugin marketplace add github/copilot-plugins
  /plugin install workiq@copilot-plugins
  ```
 
@@ -530,59 +546,62 @@ You can evaluate and securely configure plugins.
 **Expected Outcome:**
 You can find, evaluate, and contribute to the plugin ecosystem.
 
-### Exercise 8: Inspect Everything with `copilot plugins`
+### Exercise 8: Audit Every Kind of Configuration
 
-**Goal:** Use the plural `copilot plugins` command to audit plugins, MCP servers, skills, instructions, and language servers in one place.
+**Goal:** Use the per-kind shell commands to audit plugins, MCP servers, skills, instructions, and language servers.
 
 **Steps:**
 
-1. List everything configured for the current workspace:
+1. List the installed plugins:
  ```bash
- copilot plugins list
+ copilot plugin list
  ```
- Note how the output groups results by kind, then by configuration scope (user, repository, organization, plugin, built-in).
+ `copilot plugins` is an alias for the same command, so either spelling works.
 
  > A `[plugin-dir]` warning about a bundled plugin directory with no `plugin.json` or `SKILL.md` may print before the output. It is benign — the listing that follows is complete.
 
-2. Narrow the output to a single kind:
+2. List the other kinds, one command each:
  ```bash
- copilot plugins list --kind mcp
- copilot plugins list --kind skill
+ copilot mcp list
+ copilot skill list
+ copilot instruction list
+ copilot lsp list
+ ```
+ Note how `copilot skill list` groups skills by source (builtin, project, personal, plugin, custom).
+
+3. Take machine-readable output where you need to script against it:
+ ```bash
+ copilot plugin list --json
+ copilot skill list --json
  ```
 
-3. Combine kind and scope filters, and take machine-readable output:
+4. Toggle a resource and confirm the change. Disable the built-in GitHub MCP server, inspect the setting, then re-enable it:
  ```bash
- copilot plugins list --kind mcp --kind skill --scope user --json
- ```
-
-4. Toggle a resource by kind. Disable the built-in GitHub MCP server, confirm it, then re-enable it:
- ```bash
- copilot plugins disable github-mcp-server --mcp
+ copilot mcp disable github-mcp-server
  jq '.disabledMcpServers' ~/.copilot/settings.json
- copilot plugins enable github-mcp-server --mcp
+ copilot mcp enable github-mcp-server
  ```
 
  > [!NOTE]
- > The built-in server's name is `github-mcp-server`. Confirm the change through `settings.json` rather than `copilot plugins list --kind mcp` — built-in servers are not included in that listing.
+ > The built-in server's name is `github-mcp-server`. Confirm the change through `settings.json` rather than `copilot mcp list` — built-in servers are not included in that listing.
 
 5. Install a skill into the current project rather than your user account:
  ```bash
- copilot plugins install --skill --scope project ~/.copilot/skills/git-workflow/SKILL.md
+ copilot skill add --project ~/.copilot/skills/git-workflow/SKILL.md
  ```
  > Reuse the personal `git-workflow` skill you created in Module 6. Project-scoped skills land in `.github/skills/`.
 
-6. Open the same view interactively:
+6. See the whole loaded environment at once from inside a session:
  ```bash
  copilot
  ```
  ```
+ /env
  /plugin
- /plugin --mcp
- /plugin --skill
  ```
 
 **Expected Outcome:**
-You can audit and toggle plugins, MCP servers, and skills from a single command, filter by kind and scope, and open the equivalent interactive dashboard with `/plugin`.
+You can audit and toggle plugins, MCP servers, skills, instructions, and language servers from the shell, and read the equivalent consolidated view with `/env` and `/plugin`.
 
 ## Plugin Installation Methods
 
@@ -685,7 +704,7 @@ copilot --plugin-dir ./plugin-a --plugin-dir ./plugin-b
 ## Summary
 
 - ✅ Plugins extend Copilot's capabilities significantly
-- ✅ Two default marketplaces: `copilot-plugins` and `awesome-copilot`
+- ✅ `awesome-copilot` is the included marketplace; add others such as `copilot-plugins` with `copilot plugin marketplace add`
 - ✅ github/copilot-plugins provides official integrations
 - ✅ work-iq-mcp enables enterprise Microsoft integrations
 - ✅ Community MCP servers add diverse capabilities
@@ -697,8 +716,8 @@ copilot --plugin-dir ./plugin-a --plugin-dir ./plugin-b
 - ✅ `copilot plugin marketplace browse` discovers marketplace plugins
 - ✅ `copilot plugin marketplace update` refreshes plugin catalogs
 - ✅ `copilot plugin update` needs a plugin name or `--all`
-- ✅ `copilot plugins` (plural) inspects plugins, MCP servers, skills, instructions, and language servers by kind and scope
-- ✅ `/plugin` opens the same view as an interactive dashboard
+- ✅ `copilot plugin list`, `copilot mcp list`, `copilot skill list`, `copilot instruction list`, and `copilot lsp list` audit each kind of configuration
+- ✅ `/plugin` opens the interactive plugin dashboard and `/env` shows every loaded kind at once
 - ✅ Plugin and hook scripts get `PLUGIN_ROOT`, `PLUGIN_DATA`, and `COPILOT_PROJECT_DIR` (plus their `COPILOT_`/`CLAUDE_` variants)
 - ✅ Plugins can bundle skills, agents, hooks, MCP servers, and LSP servers
 

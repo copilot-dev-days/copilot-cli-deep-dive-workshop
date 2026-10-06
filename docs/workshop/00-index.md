@@ -101,6 +101,8 @@ copilot --continue
 | `/new` | Start new conversation (old session stays backgrounded) |
 | `/session` | View and manage sessions |
 | `/fork` | Fork the current session into a new session |
+| `/worktree` | Create a git worktree from your base ref and switch into it |
+| `/move` | Move uncommitted changes into a new git worktree and switch into it |
 | `/usage` | Display session usage metrics |
 | `/context` | View token usage |
 | `/compact` | Compress session history |
@@ -137,6 +139,8 @@ copilot --continue
 | `/statusline` | Configure status line items |
 | `/changelog` | Display the changelog for CLI releases |
 | `/subagents` | Configure default and per-agent subagent models |
+| `/vim` | Toggle Vim mode for the prompt input |
+| `/collect-debug-logs` | Collect debug logs to a local `.tgz` file or a secret gist |
 
 ## Environment Setup Check
 

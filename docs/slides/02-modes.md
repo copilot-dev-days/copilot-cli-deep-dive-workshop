@@ -64,7 +64,7 @@ style: |
 
 ---
 
-## Three Ways to Use Copilot CLI
+## Four Ways to Use Copilot CLI
 
 | Mode | Command | Best for |
 |------|---------|----------|
@@ -153,6 +153,17 @@ Perfect for: big features, refactoring, parallel work
 
 ---
 
+## Status Hints & Repository State
+
+While composing a prompt, the status bar teaches the interface:
+
+- `@files` and `#issues` hints surface context shortcuts
+- `/help` appears with the command picker; commands are tab-completable
+- Git branch suffixes show changes: `*` unstaged, `+` staged, `%` untracked
+- Example: `main*+%`
+
+---
+
 ## Slash Commands
 
 Type **`/help`** to see them all
@@ -160,17 +171,18 @@ Type **`/help`** to see them all
 | Category | Key commands |
 |----------|-------------|
 | **Review** | `/plan`, `/review`, `/rubber-duck`, `/security-review`, `/diff`, `/research`, `/rewind` |
-| **Session** | `/clear`, `/resume`, `/rename`, `/fork`, `/session`, `/usage` |
+| **Session** | `/clear`, `/new`, `/resume`, `/rename`, `/fork`, `/worktree`, `/move`, `/session`, `/usage` |
 | **Navigation** | `/cwd`, `/add-dir`, `/list-dirs` |
 | **Context** | `/context`, `/compact` |
-| **Config** | `/model`, `/mcp`, `/plugin`, `/theme`, `/settings`, `/statusline`, `/subagents`, `/instructions` |
+| **Quick / env** | `/ask`, `/refine`, `/env`, `/remote` |
+| **Config** | `/model`, `/mcp`, `/plugin`, `/theme`, `/settings`, `/statusline`, `/subagents`, `/instructions`, `/terminal-setup`, `/experimental` |
 | **Tools** | `/permissions`, `/allow-all`, `/reset-allowed-tools` |
-| **Extensibility** | `/skills`, `/plugin`, `/agent`, `/fleet` |
+| **Extensibility** | `/skills`, `/plugin`, `/agent`, `/fleet`, `/delegate` |
 | **Scheduling** | `/after`, `/every` |
-| **Sharing** | `/share`, `/feedback`, `/copy` |
+| **Sharing** | `/share`, `/share html`, `/feedback`, `/copy` |
 | **Account** | `/login`, `/logout`, `/user` |
 | **IDE** | `/ide` |
-| **System** | `/help`, `/changelog`, `/exit`, `/init`, `/tasks`, `/lsp`, `/update`, `/restart`, `/version`, `/chronicle`, `/limits` |
+| **System** | `/help`, `/changelog`, `/exit`, `/init`, `/tasks`, `/lsp`, `/update`, `/restart`, `/version`, `/voice`, `/computer`, `/vim`, `/chronicle`, `/search`, `/keep-alive`, `/limits`, `/diagnose`, `/collect-debug-logs`, `/app` |
 
 > Most commands have aliases — `/yolo` → `/allow-all`, `/cd` → `/cwd`, `/undo` → `/rewind`
 > `/theme` with no argument opens the theme picker; `/settings theme dim` sets it directly
@@ -196,7 +208,52 @@ Type **`/help`** to see them all
 | `ctrl+f` / `ctrl+b` | Page forward / back |
 | `ctrl+g` | Open prompt in external editor |
 
-> See workshop for 25+ additional shortcuts including text editing and navigation
+> See workshop for 18 additional shortcuts including text editing and navigation
+
+---
+
+## Session Semantics & Aliases
+
+- `/new [prompt]` starts a conversation and keeps the old session backgrounded
+- `/clear [prompt]` abandons the current session and starts fresh
+- `/share html` writes a self-contained interactive export
+- `/keep-alive on|off|busy` prevents sleep; `/memory on|off` controls recall
+- `/pr` manages the current branch pull request
+
+Common aliases: `/yolo` → `/allow-all` · `/btw` → `/ask` · `/reset` → `/clear` · `/continue` → `/resume` · `/undo` → `/rewind` · `/export` → `/share` · `/caffeinate` → `/keep-alive`
+
+---
+
+## Commands During Agent Work
+
+No need to wait for the current agent turn:
+
+| Command | Use |
+|---------|-----|
+| `/ask` | Quick answer, excluded from conversation history |
+| `/env` | Loaded instructions, MCPs, skills, agents, hooks, plugins, LSPs, extensions |
+| `/remote` | Start or manage remote control |
+| `/diff`, `/agent`, `/feedback`, `/ide` | Inspect or control work in progress |
+
+`/refine` rewrites rough input for review before you send it.
+
+---
+
+## Startup Controls
+
+```bash
+copilot --mode plan                 # interactive, plan, or autopilot
+copilot --agent rubber-duck
+copilot -n "auth-fix" --session-id <id>
+copilot -C ./service --context long_context
+copilot --effort high --max-ai-credits 30
+copilot --remote                    # web/mobile remote control
+```
+
+Also: `--plan`, `--autopilot`, `--experimental`, `--connect[=id]`, `--acp`,
+`--max-autopilot-continues`, `--enable-reasoning-summaries`
+
+`/init` bootstraps repository instructions; `/terminal-setup` configures multiline input.
 
 ---
 

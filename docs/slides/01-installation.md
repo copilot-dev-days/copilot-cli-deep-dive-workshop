@@ -159,22 +159,27 @@ copilot
 
 ---
 
-## Version & Updates
+## Updates & Troubleshooting
 
 ```bash
-# Check binary version without launching
-copilot --version
-
-# Check for updates
-copilot version
-
-# Update on a specific channel
-copilot update stable
-copilot update prerelease
-
-# Inside a session:
-/version
+copilot --version              # installed binary
+copilot version                # check for updates
+copilot update stable          # install update
+copilot update prerelease      # alternate channel
+/version                       # check inside a session
+copilot --no-auto-update       # disable for this run
+COPILOT_AUTO_UPDATE=false copilot
 ```
+
+| Symptom | Check |
+|---------|-------|
+| `copilot` not found | npm global bin is on `PATH` |
+| Runtime too old | Install current Node.js LTS |
+| npm permission denied | Fix npm prefix; do not use `sudo` |
+| Authentication fails | Subscription, org policy, and token type |
+| Remote browser does not open | Use `copilot login --device-code` |
+
+> Containers need a fine-grained PAT with **Copilot Requests** permission; classic PATs are unsupported. Token alternatives: `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN`.
 
 ---
 

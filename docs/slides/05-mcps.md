@@ -61,7 +61,7 @@ style: |
 
 ## What is MCP?
 
-**Model Context Protocol** — an open standard that gives Copilot **plugins**
+**Model Context Protocol** — an open standard that gives Copilot **tools, prompts, and resources**
 
 ```
 ┌─────────────┐ ┌─────────────┐ ┌─────────────────┐
@@ -71,6 +71,23 @@ style: |
 ```
 
 Connect Copilot to: databases, APIs, file systems, search, Slack, and more
+
+---
+
+## Debugging MCP Servers
+
+Errors appear in session output and server details for startup, connection,
+configuration, and tool-call failures.
+
+```text
+/mcp show <name>     # status, errors, tools
+/mcp reload          # restart after config changes
+/mcp auth <name>     # repeat remote authentication
+```
+
+Remote HTTP/SSE servers retry transient timeouts, DNS failures, and server
+errors. OAuth can fall back to a self-signed HTTPS redirect when the identity
+provider requires HTTPS.
 
 ---
 
@@ -106,8 +123,11 @@ Lives at **`~/.copilot/mcp-config.json`**
 **Local** → `"type": "local"` + `command`/`args` | **Remote** → `"type": "http"` + `url`
 Optional: `"tools": ["*"]` (default), `"env": {}`, `"headers": {}`
 
-> Server names support npm-style identifiers like `@modelcontextprotocol/server`
-> Workspace config can live in `.mcp.json` or `.github/mcp.json`
+> Server names support npm-style identifiers like `@modelcontextprotocol/server`.
+> Workspace config can live in `.mcp.json` or `.github/mcp.json`; `COPILOT_HOME` moves user config.
+
+Only environment variables referenced by `command`, `args`, or `cwd` inherit
+from the shell; declare every other server variable explicitly in `env`.
 
 ---
 
@@ -131,6 +151,9 @@ Optional: `"tools": ["*"]` (default), `"env": {}`, `"headers": {}`
 
 Copilot uses GitHub MCP tools automatically
 
+- Timeline entries summarize each MCP tool name and parameters
+- MCP sampling requests (server-requested LLM inference) require user approval
+
 > It appears in the in-session `/mcp` view, not in `copilot mcp list`
 
 ---
@@ -143,6 +166,8 @@ Copilot uses GitHub MCP tools automatically
 | Memory | `server-memory` | Remember things across sessions |
 | Filesystem | `server-filesystem` | Structured file access |
 | PostgreSQL | `server-postgres` | Query databases |
+| Slack | `@modelcontextprotocol/server-slack` | Team messages and search |
+| Brave Search | `@anthropic/mcp-server-brave-search` | Web search |
 
 Full list: [github.com/modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers)
 
@@ -161,7 +186,8 @@ Use shell commands or the interactive `/mcp` view:
 | `copilot mcp remove NAME` | Remove a server |
 | `/mcp` | Open interactive MCP view |
 
-> Use `--additional-mcp-config @file.json` for session-only servers
+> Use `--additional-mcp-config @file.json` for session-only servers.
+> `mcp add` also supports `--env`, `--header`, `--timeout`, `--tools`, `--json`, and `--show-secrets`.
 
 ---
 
