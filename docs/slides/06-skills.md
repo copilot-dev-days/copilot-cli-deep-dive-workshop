@@ -95,6 +95,7 @@ Copilot **auto-selects** the right skill based on your request
     ├── examples/          ← Optional: code examples
     │   ├── example.ts
     │   └── example.py
+    ├── scripts/           ← Optional: executable helpers
     └── templates/         ← Optional: code templates
 ```
 
@@ -123,16 +124,33 @@ Three skills ship with the CLI and need **no configuration**:
 | `github-pr-media` | Upload images/video to GitHub's user attachments API and embed them in a PR description or comment |
 
 ```bash
-copilot skill list                  # omits discover-resources
-copilot plugins list --kind skill   # fuller inventory — all three
+copilot skill list                  # grouped by source
+copilot skill list --json
 ```
 
-> Audit with both: `copilot skill list` reports only `customize-cloud-agent`
-> and `github-pr-media`, so a built-in can look missing
+> `discover-resources` backs the runtime discovery search and is not
+> user-selectable, so it does not appear in `copilot skill list`
 
 > Built-ins can't be deleted, but they can be disabled
-> (`copilot plugins disable <name> --skill`, or the `/plugin`
-> dashboard) or overridden by a project/personal skill of the same name
+> (`copilot skill disable <name>`, or the `/skills` view)
+> or overridden by a project/personal skill of the same name
+
+---
+
+## Community Skills & Validation
+
+- Discover portable skills at **agentskills.io** and review examples in
+  `github.com/anthropics/skills`
+- The Agent Skills specification makes `SKILL.md` reusable across clients
+- `name` is lowercase/hyphenated and at most 64 characters; `description` is
+  at most 1024 characters
+- Built-ins use `user-invocable: false`; the model loads them when needed
+
+```bash
+copilot skill add ./skills-directory
+copilot skill enable my-skill
+copilot skill remove ./skills-directory
+```
 
 ---
 
@@ -145,6 +163,7 @@ copilot plugins list --kind skill   # fuller inventory — all three
 | `.claude/skills/` | This project | Cross-client skill layout |
 | `~/.copilot/skills/` | All projects | Personal workflow skills |
 | `~/.agents/skills/` | All projects | Personal shared skills |
+| Custom directories | Registered with `copilot skill add <directory>` | Shared/custom layouts |
 | Plugins | Plugin scope | Bundled skills |
 
 **Project skills** take priority over **personal skills**
@@ -153,6 +172,7 @@ copilot plugins list --kind skill   # fuller inventory — all three
 copilot skill add --project ./my-skill/SKILL.md
 copilot skill add https://example.com/my-skill/SKILL.md
 copilot skill list --json
+copilot skill disable my-skill
 copilot skill remove my-skill
 ```
 

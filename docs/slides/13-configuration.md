@@ -67,7 +67,7 @@ style: |
 - IDE integration (`/ide`, `openDiffOnEdit`)
 - Accessibility & streamer mode
 - Team configuration standardization
-- Logging, debugging, and session limits
+- Logging, debugging, session limits, extensions, and observability
 
 ---
 
@@ -132,22 +132,63 @@ Managed settings apply on top of yours and cannot be edited from the CLI
 
 ---
 
+## Current Interaction Settings
+
+Grouped UI/runtime controls include:
+
+- Alerts: `notifications`, `beepOnSchedule`, `showTipsOnStartup`
+- Input/history: `commandHistoryMaxSize`, `compactPaste`, `copyOnSelect`
+- Rendering: `scrollbar`, `inlineImages`, `inlineImageLiveWindow`, `renderMarkdown`
+- Agent behavior: `stayInAutopilot`, `effortLevel`, `contextTier`, `memory`
+- Shell/network: `tabs`, `proxyUrl`, `proxyKerberosServicePrincipal`, `powershellFlags`
+
+---
+
+## Discovery, Extensions & Delegation
+
+| Family | Representative settings |
+|--------|--------------------------|
+| Discovery | `skillDirectories`, `disabledSkills`, `disabledHooks`, `hooks` |
+| MCP/plugins | `disabledMcpServers`, `enabledMcpServers`, `enabledPlugins`, `extraKnownMarketplaces`, `strictKnownMarketplaces` |
+| Extensions | `extensions.disabledExtensions`, GitHub MCP tools/toolsets |
+| Subagents | `subagents.agents`, `disabledSubagents`, `maxConcurrency`, `maxDepth` |
+| Local agents | `customAgents.defaultLocalOnly` |
+| Footer | `footer.show*`, custom `statusLine`, `/footer` |
+
+---
+
+## Permissions, Sandbox & Voice
+
+- `permissions.allow`, `.ask`, `.deny` define persistent rules; deny wins
+- `sandbox.*` controls filesystem/network policy, local MCP/LSP isolation,
+  bypass, and optional `git` / `gh` credential injection
+- `voice.enabled` and `voice.selectedModel` configure `/voice`
+- `allowedUrls` / `deniedUrls` and `defaultPermissionMode` set startup policy
+
+> Remote HTTP/SSE MCP servers are outside the command sandbox.
+
+---
+
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
 | `COPILOT_GITHUB_TOKEN` | Auth token (highest priority) |
 | `COPILOT_HOME` | Override config directory |
-| `COPILOT_MODEL` | Default model |
-| `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` | Extra instruction dirs |
-| `COPILOT_EDITOR` | Editor for plans/prompts |
+| `COPILOT_MODEL` / `COPILOT_GH_HOST` | Model / CLI-specific GitHub host |
+| `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` / `COPILOT_SKILLS_DIRS` | Discovery paths |
+| `COPILOT_EDITOR` / `VISUAL` / `EDITOR` | Editor precedence |
+| `COPILOT_ALLOW_ALL` / `COPILOT_AUTO_UPDATE` / `COPILOT_OFFLINE` | Runtime policy |
 | `COPILOT_PROVIDER_*` | Custom model provider (BYOK) |
 | `COPILOT_OTEL_*` / `OTEL_*` | OpenTelemetry monitoring |
+| `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` | Network proxy family |
+| `COPILOT_HOOK_*` / `COPILOT_PLUGIN_DIR_ONLY` | Hook/plugin policy |
 | `COPILOT_ASSISTED_APPROVAL` | Env form of `--assisted-approval` |
 | `COPILOT_MULTIPLEXER` | Override detected multiplexer: `tmux`, `herdr`, `none` |
 | `COPILOT_INLINE_IMAGES_HERDR` | Set `1` for inline images under herdr (once `inlineImages` is on) |
 | `PLAIN_DIFF` | Disable rich diffs |
-| `USE_BUILTIN_RIPGREP` | Set `false` to use PATH ripgrep |
+| `USE_BUILTIN_RIPGREP` / `USE_TGREP` / `USE_TGREP_WARM_START` | Search backend controls |
+| `COPILOT_DISABLE_TERMINAL_TITLE` / `COPILOT_INLINE_IMAGE_LIMIT` | Terminal rendering controls |
 | `NO_COLOR` | Disable color output |
 
 > `copilot help environment` is the authoritative reference
@@ -159,6 +200,7 @@ Managed settings apply on top of yours and cannot be edited from the CLI
 | Flag | Purpose |
 |------|---------|
 | `-i, --interactive` | Interactive + auto-execute prompt |
+| `--mode <mode>` / `--plan` | Start in interactive, plan, or autopilot mode |
 | `--output-format json` | JSONL output for scripting |
 | `--stream on\|off` | Control streaming |
 | `--acp` | Agent Client Protocol server |
@@ -174,10 +216,33 @@ Managed settings apply on top of yours and cannot be edited from the CLI
 | `--log-dir` / `--log-level` | Logging control |
 | `--plugin-dir` | Load local plugin |
 | `--max-ai-credits` | Session AI credit limit |
-| `--session-id` | Set/resume session ID |
-| `--remote-export` | Read-only web/mobile export |
+| `-n, --name` / `--session-id` | Name or identify a session |
+| `--resume` / `--continue` / `--connect` | Resume or connect |
+| `--remote` / `--remote-export` | Control or read-only web/mobile access |
+| `--allow-tool` / `--deny-tool` / `--allow-url` | Permission rules |
+| `--available-tools` / `--excluded-tools` | Tool visibility |
+| `--additional-mcp-config` / `--enable-all-github-mcp-tools` | MCP startup controls |
+| `--attachment` / `--share` / `--share-gist` | Input and export |
+| `--no-auto-update` | Disable automatic updates |
 | `--extension-sdk-path <directory>` | Override bundled `@github/copilot-sdk` for extensions (invalid path → bundled) |
 | `--no-eager-powershell-resolution` | Disable background PowerShell prompt resolution on Windows |
+
+---
+
+## Inspect, Open & Monitor
+
+```text
+/env                     # loaded instructions, MCPs, skills, agents,
+                         # hooks, plugins, LSPs, and extensions
+/app                     # open Copilot app from a session
+```
+
+```bash
+copilot app              # open app for the current directory
+copilot help monitoring  # OTel exporters, spans, metrics, attributes
+copilot help config      # authoritative settings reference
+copilot help environment # authoritative environment reference
+```
 
 ---
 
@@ -229,7 +294,6 @@ copilot -p "..." --usage-output-file ./usage.json   # final usage as JSON
 ```
 /limits                          # interactive dialog
 /limits set max-ai-credits 50
-/limits predict
 /limits unset max-ai-credits
 ```
 

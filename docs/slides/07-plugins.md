@@ -79,24 +79,42 @@ Plugins = **packaged integrations** from the ecosystem
 
 ---
 
+## Plugin vs MCP vs Skill
+
+| Kind | Best for |
+|------|----------|
+| Plugin | Package agents, hooks, skills, MCPs, and LSPs together |
+| MCP server | Connect tools and external resources |
+| Skill | Reusable on-demand instructions and resources |
+
+---
+
 ## Plugin Sources
 
 | Source | What you'll find |
 |--------|-----------------|
-| **github/copilot-plugins** | Official GitHub plugins (default marketplace) |
-| **github/awesome-copilot** | Community-curated plugins (default marketplace) |
+| **github/awesome-copilot** | Community-curated plugins (included marketplace) |
+| **github/copilot-plugins** | Official GitHub plugins (register it first) |
 | **microsoft/work-iq-mcp** | Enterprise integrations |
-| **GitHub repos** | Direct `owner/repo` installs |
-| **Repo subdirectories** | `owner/repo:path` plugin layouts |
+| **Community plugins** | Third-party extensions |
+| **Custom plugins** | Your own integrations |
+| **GitHub repos / subdirectories** | `owner/repo` or `owner/repo:path` installs |
 | **Git URLs** | Direct git install sources |
 
 ```bash
 # Search for available plugins
 copilot plugin marketplace list
+copilot plugin marketplace browse awesome-copilot
+
+# Register another marketplace, then browse it
+copilot plugin marketplace add github/copilot-plugins
 copilot plugin marketplace browse copilot-plugins
 ```
 
 Inside a session, use `/plugin` for interactive marketplace browsing and plugin management.
+
+> `awesome-copilot` is included. Register other marketplaces explicitly, or
+> trust additional policy-approved catalogs through `extraKnownMarketplaces`.
 
 ---
 
@@ -123,6 +141,18 @@ copilot plugin install https://github.com/owner/my-plugin.git
 
 ---
 
+## Registry, Authentication & Setup
+
+- MCP servers come from a **policy-configured registry**, not `copilot plugin install`
+- Registry access may require authentication and interactive secret entry
+- Add MCP servers with `/plugin`, `/mcp`, or `copilot mcp add`
+- A plugin manifest may show a **post-install message** with setup steps,
+  required configuration, or usage tips
+
+> Read the post-install message and audit requested credentials before use.
+
+---
+
 ## Plugin Maintenance
 
 ```bash
@@ -138,27 +168,35 @@ copilot plugin marketplace update
 
 ---
 
-## `copilot plugins` (plural)
+## Auditing Every Kind
 
-One command for **plugins, MCP servers, skills, instructions, LSPs**
+One command per kind — `copilot plugins` is an alias of `copilot plugin`
 
 ```bash
-copilot plugins list
-copilot plugins list --kind mcp --kind skill
-copilot plugins list --scope user --json
+copilot plugin list --json        # installed plugins
+copilot mcp list                  # MCP servers
+copilot skill list                # skills, grouped by source
+copilot instruction list          # custom instruction sources
+copilot lsp list                  # language servers
 
-copilot plugins install --skill --scope project ./my-skill/SKILL.md
-copilot plugins enable github-mcp-server --mcp
-copilot plugins disable my-skill --skill
-copilot plugins remove spark@copilot-plugins
+copilot plugin enable arch@awesome-copilot
+copilot plugin disable arch@awesome-copilot
+copilot mcp disable github-mcp-server
+copilot skill disable my-skill
 ```
 
-Kinds: `plugin`, `mcp`, `skill`, `instruction`, `lsp`
-Scopes: `user`, `session`, `repository`, `working-directory`,
-`organization`, `plugin`, `builtin`, `unknown`
-
-> `/plugin` opens the same view as an interactive dashboard
+> `/plugin` opens the interactive plugin dashboard;
+> `/env` shows every loaded kind at once
 > A `[plugin-dir]` warning about a bundled plugin directory with no `plugin.json` or `SKILL.md` may print first — benign, the listing that follows is complete
+
+---
+
+## Common Integration Packages
+
+Common MCP packages include `@modelcontextprotocol/server-filesystem`,
+`@modelcontextprotocol/server-postgres`, `@modelcontextprotocol/server-memory`,
+and `@anthropic/mcp-server-puppeteer`. Verify source, policy, authentication,
+and requested permissions before installation.
 
 ---
 
@@ -179,14 +217,14 @@ copilot --allow-tool 'plugin-name' --deny-tool 'shell(rm)'
 
 ---
 
-## Plugin Capabilities
+## Plugin Capabilities & Discovery
 
 - **Skills** — reusable instructions
 - **Agents** — specialized personas
 - **Hooks** — lifecycle automation
 - **MCP servers** — tools and resources
 - **LSP servers** — code intelligence
-- **Marketplace catalogs** — discoverable plugin listings
+- **Marketplace catalogs** point to discoverable packages; they are sources, not bundled capabilities
 
 Hook and plugin scripts receive `PLUGIN_ROOT`, `PLUGIN_DATA`, and
 `COPILOT_PROJECT_DIR` (plus `COPILOT_`/`CLAUDE_` variants)
@@ -206,6 +244,6 @@ Open **Module 7** in `docs/workshop/07-plugins.md`
 - **Exercise 5** — Create a custom plugin
 - **Exercise 6** — Plugin security review
 - **Exercise 7** — Plugin discovery
-- **Exercise 8** — Inspect everything with `copilot plugins`
+- **Exercise 8** — Audit every kind of configuration
 
 ⏱️ You have **~12 minutes**

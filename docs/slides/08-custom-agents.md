@@ -61,7 +61,7 @@ style: |
 
 ## What are Custom Agents?
 
-**Specialized Copilot personas** with:
+**Specialized, model-aware Copilot personas** that can report their active model, with:
 
 - 🎭 Defined role and expertise
 - 🔧 Specific tool access
@@ -181,6 +181,24 @@ AGENTS.md (root or subdirectory)
 
 User-level agents **override** repo-level agents with the same name
 Agents can **delegate to other agents** for complex workflows
+
+---
+
+## Subagent Controls
+
+Bound delegation by depth and concurrency on usage-based billing accounts:
+
+| Setting | Purpose |
+|---------|---------|
+| `subagents.maxDepth` | Limit nested delegation |
+| `subagents.maxConcurrency` | Limit parallel subagents |
+| `subagents.disabledSubagents` | Disable selected subagents |
+| `customAgents.defaultLocalOnly` | Skip remote org/enterprise agents |
+
+- `/subagents` sets per-agent model, effort, and context-tier overrides
+- Agent names are lowercase-hyphenated and at most 64 characters
+- Unknown frontmatter fields produce warnings: fix spelling/schema rather than
+  assuming the field took effect
 
 ---
 

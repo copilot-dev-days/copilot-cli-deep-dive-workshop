@@ -422,6 +422,7 @@ You can export an in-progress interactive session with `/share`, and capture a n
 | `--continue` | Resume the most recent session |
 | `-r, --resume[=value]` | Resume a previous session; with no value it opens the session picker. Optionally accepts an existing session ID, task ID, ID prefix (7+ hex chars), or session name (exact, case-insensitive). |
 | `-n, --name <name>` | Set a name for the new session |
+| `--session-id <id>` | Resume an existing session or task by ID, or set the UUID for a new session |
 | `--connect[=sessionId]` | Connect directly to a remote session (optionally specify session ID or task ID) |
 | `--remote` | Enable remote control of your session from GitHub web and mobile |
 | `--remote-export` | Export your session to GitHub web and mobile (read-only; does not enable remote control) |

@@ -129,7 +129,7 @@ Highest wins ↓
 You are a senior TypeScript engineer.
 
 ## DO NOT
-- Never modify migration files without permission
+- Never modify database change files without explicit permission
 - Never commit directly to main
 - Never remove tests
 
@@ -199,6 +199,16 @@ copilot
 Comma-separated list of directories — useful for shared team standards kept
 outside the repository. Files found there sit at the bottom of the priority
 stack, and overlap with the project directory is deduplicated.
+
+---
+
+## System Message Customization
+
+The experimental **customize** mode can override selected sections of the
+system prompt without replacing the whole message.
+
+> Keep project guidance in instruction files. Configuration details and the
+> experimental toggle are covered in **Module 13**.
 
 ---
 

@@ -63,12 +63,16 @@ style: |
 
 | Tool | Purpose | Risk |
 |------|---------|------|
-| `bash` | Execute shell commands | ⚠️ High |
+| `bash` | Execute shell commands; manage background work with `read_bash`, `list_bash`, `stop_bash` | ⚠️ High |
 | `create` / `edit` | Create and modify files | ⚠️ High |
 | `view` | Read files, list directories | Low |
 | `glob` / `grep` | Find files, search contents | Low |
 | `web_fetch` / `web_search` | Fetch and search the web | Medium |
-| `task` / `skill` | Delegate to subagents, load skills | Varies |
+| `fetch_copilot_cli_documentation` | Look up CLI documentation | Low |
+| `task` / `read_agent` / `write_agent` / `list_agents` | Orchestrate subagents and messages | Varies |
+| `skill` / `ask_user` | Load guidance / request clarification | Low |
+| `sql` / `session_store_sql` | Query session and task state | Low |
+| `run_dynamic_workflow` / `dynamic_workflows_manage` | Register and run workflows | Varies |
 | MCP server tools | Contributed by configured servers | Varies |
 
 Every destructive action **requires your approval**
@@ -106,6 +110,9 @@ Three choices when Copilot wants to use a tool:
 
 > Use `/reset-allowed-tools` to clear session approvals
 
+> **Path approval is separate:** allow one access for the session, or add the
+> path persistently. Tool permission does not automatically grant path access.
+
 > ⚠️ Undo operations always require confirmation before applying
 
 ---
@@ -125,6 +132,7 @@ Three choices when Copilot wants to use a tool:
 /permissions
 /permissions allow-all
 /permissions show
+/allow-all on|off|show
 ```
 
 > `assisted` needs the experimental auto-approval feature; request the same judge at launch with `--assisted-approval` (env: `COPILOT_ASSISTED_APPROVAL`)
@@ -173,12 +181,15 @@ copilot --yolo -p "Set up a Node.js project"
 ```bash
 # Allow/deny URL access
 copilot --allow-url github.com --deny-url malicious-site.com
+copilot --allow-all-urls
+# Protocol matters: https://example.com and http://example.com differ
 
 # URL pattern in tool permissions
 copilot --allow-tool 'url(https://api.github.com)'
 
 # Path controls
 copilot --add-dir ~/other-project
+copilot --allow-all-paths
 copilot --disallow-temp-dir
 
 # Redact sensitive env vars
@@ -187,6 +198,16 @@ copilot --secret-env-vars=MY_API_KEY
 # Fully autonomous (no questions)
 copilot --no-ask-user --allow-all
 ```
+
+---
+
+## Risk Categories
+
+Review approvals by impact: **read-only** → **git read** → **git write** →
+**file modify** → **file delete** → **system command**.
+
+Broader permission is not broader visibility: keep dangerous tools hidden or
+denied even when low-risk reads are session-approved.
 
 ---
 
@@ -207,10 +228,13 @@ copilot --experimental --sandbox   # start a session with it already on
 Shell commands run inside an OS-level sandbox — restricted **filesystem**, **network**, and **credentials**
 
 - Experimental: `/sandbox` registers with `--experimental`, `/settings experimental on`, or a policy that forces sandboxing on
-- Backends: Seatbelt (macOS), bubblewrap (Linux), ProcessContainer (Windows)
-- Configured under `sandbox.*` in `~/.copilot/settings.json` (`sandbox.auth.git` / `sandbox.auth.gh` inject credentials)
+- Microsoft Execution Containers (MXC): Seatbelt/`sandbox-exec` (macOS), bubblewrap/`bwrap` (Linux), ProcessContainer (Windows)
+- Configured under `sandbox.*` in `~/.copilot/settings.json`
+- `sandbox.auth.git` / `sandbox.auth.gh` deliberately inject credentials only while sandboxing is enabled
+- Exported environment credentials can still be inherited; strip sensitive values with `--secret-env-vars`
+- Only local stdio MCP/LSP processes can be sandboxed; remote HTTP/SSE MCP servers are never sandboxed
 
-> `copilot help sandbox` has the full reference
+> `--sandbox` is not listed in `copilot --help` — `copilot help sandbox` has the full reference
 
 ---
 

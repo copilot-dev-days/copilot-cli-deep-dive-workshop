@@ -114,7 +114,10 @@ Personal hooks in `~/.copilot/hooks/` run regardless of trust
 |-------|----------|
 | **Repository** | any `*.json` in `<git root>/.github/hooks/` |
 | **Personal** | any `*.json` in `~/.copilot/hooks/` |
-| **Inline** | the `hooks` key — user-level in global `config.json`, repo-level in `settings.json` |
+| **Inline** | the `hooks` key — user-level from managed global config, repo-level in `settings.json` |
+
+> Do not hand-edit global `config.json`; it is machine-managed and holds credentials.
+> Put personal hooks in `~/.copilot/hooks/` and repository hooks in repository settings.
 
 Turn hooks off with `disableAllHooks`, or suppress individual ones with `disabledHooks`
 (policy hooks ignore both)
@@ -132,6 +135,7 @@ Lives in any `*.json` file under `.github/hooks/` — e.g. `hooks.json`
       {
         "type": "command",
         "bash": ".github/hooks/scripts/check-tool.sh",
+        "powershell": ".github/hooks/scripts/check-tool.ps1",
         "cwd": ".",
         "timeoutSec": 10
       }
@@ -139,6 +143,27 @@ Lives in any `*.json` file under `.github/hooks/` — e.g. `hooks.json`
   }
 }
 ```
+
+---
+
+## Compatible Hook Schemas
+
+Copilot accepts native and Claude-compatible hook files:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "Bash",
+      "hooks": [{ "type": "command", "command": "./check.sh" }]
+    }]
+  }
+}
+```
+
+- PascalCase event names and nested `matcher` / `hooks` are supported
+- Optional `type` and `version` fields may be present; `version` may be omitted
+- camelCase keys use the native Copilot payload; PascalCase uses the compatible payload
 
 ---
 
@@ -178,6 +203,9 @@ Track session start/end with `sessionStart` and `sessionEnd`
 
 **Use case:** Audit trail, usage metrics, compliance
 
+> `sessionStart` and `sessionEnd` fire **once per session**, not once per prompt.
+> Use `userPromptSubmitted` for per-prompt behavior.
+
 ---
 
 ## Pre-Tool Permission Control
@@ -206,7 +234,8 @@ Track session start/end with `sessionStart` and `sessionEnd`
 ```bash
 INPUT=$(cat)
 TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName')
-COMMAND=$(echo "$INPUT" | jq -r '.toolArgs | fromjson.command')
+ARGS=$(echo "$INPUT" | jq -r '.toolArgs | fromjson')
+COMMAND=$(echo "$ARGS" | jq -r '.command')
 
 if [[ "$COMMAND" == *"sudo"* ]]; then
   echo '{"permissionDecision":"deny","permissionDecisionReason":"sudo not allowed"}'
@@ -242,6 +271,20 @@ echo '{}'
 
 ---
 
+## Hook Environment & Notifications
+
+Plugin-packaged hooks receive stable paths:
+
+- `PLUGIN_ROOT` / `COPILOT_PLUGIN_ROOT` / `CLAUDE_PLUGIN_ROOT`
+- `PLUGIN_DATA` / `COPILOT_PLUGIN_DATA` / `CLAUDE_PLUGIN_DATA`
+- `COPILOT_PROJECT_DIR` / `CLAUDE_PROJECT_DIR`
+
+The `notification` family covers **background shell completion**, **permission
+prompts**, **elicitation/questions**, and **subagent completion** — useful for
+desktop, Slack, or monitoring integrations.
+
+---
+
 ## Post-Tool Logging
 
 Log tool results with `postToolUse`
@@ -269,8 +312,8 @@ Open **Module 9** in `docs/workshop/09-hooks.md`
 2. **Exercise 2** — Session logging hooks
 3. **Exercise 3** — Prompt auditing hook
 4. **Exercise 4** — Pre-tool permission control
-5. **Exercise 5** — Post-tool result logging
+5. **Exercise 5** — Post-Tool Verification
 6. **Exercise 6** — Error handling hooks
-7. **Exercise 7** — Directory restriction guardrails
+7. **Exercise 7** — Directory-Restricted Hooks
 
 ⏱️ You have **~16 minutes**
