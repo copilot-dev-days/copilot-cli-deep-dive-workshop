@@ -43,7 +43,19 @@ Within that directory, session data lives in two places:
 
 Manage this data with the `/session` subcommands rather than by deleting files by hand.
 
+### Active Context, Memory, and Sharing
+
+`/clear` starts fresh active context; it is **not secure erasure**. Persistent transcripts, logs, checkpoints, exported files/gists, synced history, and cross-session memory are separate. Interactive memory is enabled by default; `/memory off` disables recall/storage behavior, not deletion of every prior record. Never use clearing, exiting, or streamer mode as secret redaction.
+
+`--sync-session=on|off` controls **account-history sync for this run**. Sync uploads session data to your GitHub account; “read-only” describes the synced view, not a read-only network operation. Local sessions sync by default when account policy permits; use `--sync-session=off` on each invocation when you do not want cloud history uploads. Sync does not enable incoming control. `/remote` shows live remote-access status; `/remote on` enables control when incoming connections are configured, and `/remote off` stops it. `--connect` connects directly to an available remote session. Optional `--host-environment` and `--host-compute-id` describe hosted execution/identity, not a sharing prerequisite; deployment/account support requires separate validation.
+
+Optional recovery/interoperability: `copilot sessions import FILE --dry-run` validates prepared session JSONL; `copilot memories import FILE --dry-run` validates memory JSONL. Read each subcommand's help and schemas before importing real data; imports are not required for the exercises.
+
 ## Hands-On Exercises
+
+Cross-project examples assume existing directories: replace `~/another-project` and `~/project/frontend` / `~/project/backend` with your own reviewed project paths.
+
+For local-only exercises, append `--sync-session=off` to each `copilot` invocation. Use disposable project directories and review permissions before approving tools. Gist/link sharing and live remote control are optional external actions, not required for local session practice.
 
 ### Exercise 1: Session Persistence
 
@@ -56,7 +68,7 @@ Manage this data with the `/session` subcommands rather than by deleting files b
 >   - `/rename` - Rename the current session (alias for `/session rename`)
 >   - `/context` - Show context window token usage and visualization
 >   - `/usage` - Display session usage metrics and statistics
->   - `/session` - Show session info and workspace summary (use subcommands for details)
+>   - `/session` - Open the session manager; `/session info` shows current-session details
 >   - `/compact` - Summarize conversation history to reduce context window usage
 >   - `/share` - Share session to markdown file or GitHub gist
 
@@ -79,7 +91,7 @@ Manage this data with the `/session` subcommands rather than by deleting files b
    What files are in the current directory?
    ```
 
-4. Exit with `Ctrl+C` (not `/exit`).
+4. Press `Ctrl+C`, then press it again promptly when prompted to exit. `/exit` closes the current session; the CLI quits only when no other sessions remain. `/exit print` exits the CLI and offers to print the transcript.
 
 5. Immediately continue the most recent session:
    ```bash
@@ -110,14 +122,14 @@ Recent session context is restored when you explicitly continue or resume the se
    Create a file called notes.txt with "Session 1 notes"
    ```
 
-2. Use `/session` to see session info:
+2. Use `/session info` to see session info:
    ```
-   /session
+   /session info
    ```
 
 3. Note the session ID displayed.
 
-4. Exit completely:
+4. Close this session (the CLI exits if this was its last open session):
    ```
    /exit
    ```
@@ -157,12 +169,7 @@ The `--resume` flag restores a previous session you select, and `--continue` rea
    ```
    /session
    ```
-   This shows:
-   - Session ID
-   - Start time
-   - Duration
-   - Files modified
-   - Commands executed
+   This opens the session picker. Use `/session info` for the current session's ID, creation/modification times, duration, directory, storage paths, and usage. Press Enter to dismiss the details view before entering another command.
 
 4. **Check usage statistics:**
    ```
@@ -170,8 +177,8 @@ The `--resume` flag restores a previous session you select, and `--continue` rea
    ```
    This shows:
    - Token consumption
-   - API calls made
-   - Model used
+   - Session duration, edited-line totals, and account usage
+   - Per-model usage totals
 
 5. **View current working directory:**
    ```
@@ -193,7 +200,7 @@ The `--resume` flag restores a previous session you select, and `--continue` rea
    What was I just working on?
    ```
 
-   Copilot won't know because context was cleared.
+   Active conversation context is fresh, but memory or persistent repository context may still supply information. Compare `/context` and `/memory`; do not treat an answer as a privacy test.
 
 **Expected Outcome:**
 You understand each session command's purpose.
@@ -204,9 +211,9 @@ You understand each session command's purpose.
 
 **Steps:**
 
-1. Start in your home directory:
+1. Start in a disposable project, not your home directory (which may contain secrets):
    ```bash
-   cd ~
+   mkdir -p ~/copilot-session-lab && cd ~/copilot-session-lab
    copilot
    ```
 
@@ -244,6 +251,8 @@ You understand each session command's purpose.
 
 **Expected Outcome:**
 You can control Copilot's file access scope.
+
+Directory permissions are heuristic controls, not OS-level isolation. Adding a directory also trusts its skills and agents; review the root before adding it. Test outside-directory access with a disposable fixture rather than sensitive system or personal files.
 
 ### Exercise 5: Session Clearing Strategies
 
@@ -295,7 +304,7 @@ You can control Copilot's file access scope.
 | Switching to unrelated task | `/new` (keeps old session) or `/clear` (abandons) |
 | Confused responses | `/new` |
 | Context limit approaching | `/compact` first, then `/new` if needed |
-| Sensitive info discussed | `/clear` and `/exit` |
+| Sensitive info discussed | Stop sharing; rotate exposed credentials and handle transcripts/logs/exports/sync/memory separately. `/clear` is not erasure |
 | Session becomes slow | `/new` |
 
 **Expected Outcome:**
@@ -384,18 +393,19 @@ You can export an in-progress interactive session with `/share`, and capture a n
 | Command | Description | Example |
 | --- | --- | --- |
 | `/help` | List all commands | `/help` |
-| `/session` | Show session info | `/session` |
+| `/session` | Open the session manager; use `/session info` for current-session details | `/session info` |
 | `/usage` | Show usage stats | `/usage` |
 | `/cwd` | Show/change directory | `/cwd ~/project` |
-| `/add-dir` | Add accessible directory | `/add-dir /tmp` |
+| `/add-dir` | Add access and trust that root's skills/agents | `/add-dir /tmp` |
 | `/list-dirs` | List accessible directories | `/list-dirs` |
 | `/clear` | Abandon session and start fresh | `/clear` |
 | `/new [prompt]` | Start new conversation (old session stays backgrounded) | `/new` |
-| `/exit` | End session; use `/exit print` to print the session after exiting alt screen | `/exit print` |
+| `/fork [name]` (alias `/branch`) | Fork conversation context into a new session; ordinary forks still use the same project files | `/fork auth-experiment` |
+| `/exit` | Close current session; foreground another if one remains, otherwise quit. `/exit print` exits the CLI and offers transcript printing | `/exit print` |
 | `/share` | Export the session you are currently in (markdown, HTML, gist, or shareable link) | `/share` |
 | `/share html` | Export session as self-contained interactive HTML file; shows `file://` URL and `Ctrl+X O` to open | `/share html` |
 | `/model` | Switch AI model | `/model` |
-| `/rewind` (alias `/undo`) | Rewind the last turn and revert file changes; also available via double-Esc | `/rewind` |
+| `/rewind` (alias `/undo`) | Pick an earlier turn; restore conversation only or, when file rewind was enabled at session start, also Copilot's changed files, protecting files you later edited | `/rewind` |
 
 ### `/session` Subcommands
 
@@ -407,7 +417,7 @@ You can export an in-progress interactive session with `/share`, and capture a n
 | `/session <id>` | Switch to a session by ID |
 | `/session info` | Show details about the current session |
 | `/session checkpoints [n]` | List checkpoints for the current session |
-| `/session files` | List files touched in the current session |
+| `/session files` | List files in the session workspace; this is not a complete list of project-file edits |
 | `/session plan` | Show the current session's plan |
 | `/session rename [name]` | Rename the current session, or auto-generate a name |
 | `/session cleanup` | Remove stale session records |
@@ -425,7 +435,8 @@ You can export an in-progress interactive session with `/share`, and capture a n
 | `--session-id <id>` | Resume an existing session or task by ID, or set the UUID for a new session |
 | `--connect[=sessionId]` | Connect directly to a remote session (optionally specify session ID or task ID) |
 | `--remote` | Enable remote control of your session from GitHub web and mobile |
-| `--remote-export` | Export your session to GitHub web and mobile (read-only; does not enable remote control) |
+| `--remote-export` | **Removal candidate:** rejected flag; do not run. Use `--sync-session=on` for read-only history sync |
+| `--sync-session[=on\|off]` | Upload session history for a view-only account copy when policy permits; `off` disables sync for this run; no incoming control |
 | `--share [path]` | Share the session to a markdown file after completion in non-interactive mode (default: `./copilot-session-<id>.md`) |
 | `--share-gist` | Share the session to a secret GitHub gist after completion in non-interactive mode |
 | `--silent` | Output only agent response (no stats) |
@@ -435,7 +446,8 @@ You can export an in-progress interactive session with `/share`, and capture a n
 - ✅ Sessions maintain conversation history and context
 - ✅ Use `--continue` to reattach to the most recent session, and `--resume` to pick a previous one
 - ✅ `/clear` abandons the session; `/new` starts fresh while keeping the old session backgrounded
-- ✅ `/rewind` (alias `/undo`, or double-Esc) rewinds the last turn and reverts file changes
+- ✅ `/fork [name]` copies conversation context into another session, not an isolated copy of project files
+- ✅ `/rewind` selects an earlier turn; file restoration requires file rewind to have been enabled at session start
 - ✅ `/rename` auto-generates a session name from conversation history when called without arguments
 - ✅ `--name` flag sets a session name at launch; `--resume` accepts a session name for lookup
 - ✅ `/cwd` and `/add-dir` control file access scope; `/cwd` sets the working directory per session
@@ -444,6 +456,7 @@ You can export an in-progress interactive session with `/share`, and capture a n
 - ✅ Export an in-progress interactive session with `/share`, or a non-interactive run with `--share`; use `/share html` for interactive HTML
 - ✅ `/share html` shows `file://` URL and `Ctrl+X O` shortcut to open in browser
 - ✅ Remote control sessions via `--remote` or `/remote` — observe/control sessions remotely
+- ✅ View-only history sync uploads data but does not enable remote control; use `--sync-session=off` for local-only history. Clearing context does not erase transcripts, logs, memory, or exports
 
 ## Next Steps
 

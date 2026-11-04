@@ -9,12 +9,15 @@
 ## Learning Objectives
 
 - Master the user settings in `settings.json`
-- Understand every environment variable that controls Copilot CLI
-- Use the comprehensive CLI flags reference
+- Understand selected environment variables and consult authoritative help for others
+- Use the CLI flags reference for common workflows
 - Configure IDE integration, streaming, and accessibility options
 - Customize the CLI experience for team standardization
 
 ## Concepts
+
+> [!IMPORTANT]
+> Workshop session launches use `--sync-session=off` to keep account-history sync disabled. History sync is separate from remote control; do not enable either for these exercises. This does not erase any earlier uploads.
 
 ### Configuration File Location
 
@@ -23,7 +26,7 @@ Copilot CLI stores user settings at `~/.copilot/settings.json` (or under the dir
 ```bash
 # Override config directory
 export COPILOT_HOME=/path/to/custom/config
-copilot
+copilot --sync-session=off
 ```
 
 When you specify a custom config directory, the preferences stored in that directory's `settings.json` are used instead of the defaults.
@@ -33,7 +36,7 @@ When you specify a custom config directory, the preferences stored in that direc
 
 ### Settings Scopes
 
-Settings are layered. Later scopes override earlier ones, and organization-managed settings always win.
+Settings are layered. Repository and personal repository settings override user settings for supported keys; environment variables and launch flags can override runtime choices. Locked organization-managed settings win, while some managed defaults are overridable. Consult the policy reference rather than assuming every managed default is locked.
 
 | Scope | Location | Set with |
 | --- | --- | --- |
@@ -44,9 +47,11 @@ Settings are layered. Later scopes override earlier ones, and organization-manag
 
 Managed settings apply on top of your own; keys marked `managed (read-only)` cannot be edited from the CLI. `/model` also accepts `--repo` and `--local` to set a repository default model, `/config model` to set your user default, and `plan` / `--plan` to set the plan-mode model.
 
+Only a subset of user keys is repository-overridable. `theme`, `compactPaste`, and `subagents.maxConcurrency` cannot be written at repository/local scope. Shell reads such as `copilot config model` inspect the selected settings file, not the environment-resolved active model; an unset key exits with status 1. Verify active choices in a session.
+
 ### Configuration Options Reference
 
-All options below are set in `~/.copilot/settings.json`:
+The main example contains user settings. Reference subsections distinguish user, repository, and managed-only keys; do not copy administrator policy into personal settings.
 
 ```json
 {
@@ -142,13 +147,13 @@ All options below are set in `~/.copilot/settings.json`:
 |--------|------|-------------|
 | `skillDirectories` | array | Extra directories to search for skills |
 | `disabledSkills` | array | Skill names to keep from loading |
-| `disabledHooks` | array | Hook names to keep from running |
+| `disabledHooks` | array | Content-hash identifiers of hooks to suppress; not hook names, and policy hooks are exempt |
 | `hooks` | object | Inline hook definitions keyed by event name (same schema as `.github/hooks/*.json`) |
 | `disabledMcpServers` | array | MCP servers to keep from starting |
 | `enabledMcpServers` | array | MCP servers to start explicitly |
-| `enabledPlugins` | array | Plugins enabled for this user |
-| `extraKnownMarketplaces` | array | Additional trusted plugin marketplaces |
-| `strictKnownMarketplaces` | bool | Restrict plugin installs to known marketplaces |
+| `enabledPlugins` | map | Plugin specification → boolean; user/repository/managed entries |
+| `extraKnownMarketplaces` | map | Marketplace name → source definition; user/repository/managed entries |
+| `strictKnownMarketplaces` | array | **Managed-only** marketplace allowlist; an empty array blocks all marketplaces, including built-ins |
 | `extensions.disabledExtensions` | array | CLI extensions to keep from loading |
 | `githubMcpToolsets` / `githubMcpTools` | array | Toolsets and tools enabled on the built-in GitHub MCP server |
 | `enableAllGithubMcpTools` | bool | Enable every GitHub MCP server tool instead of the default subset |
@@ -188,6 +193,8 @@ Configure these interactively with `/subagents`.
 
 #### Permission Settings
 
+The following rule arrays describe **managed permissions**, not ordinary personal preferences. Administrators deploy them through supported policy channels. Use launch allow/deny flags, the permission UI, and saved location approvals for personal workflows.
+
 | Option | Type | Description |
 |--------|------|-------------|
 | `permissions.allow` | array | Tool patterns allowed without prompting |
@@ -196,7 +203,7 @@ Configure these interactively with `/subagents`.
 
 #### Command Sandboxing Settings
 
-Command sandboxing is experimental: enable experimental features, then use `/sandbox` to view or configure the policy. All keys live under `sandbox` in `settings.json`. See `copilot help sandbox`.
+Command sandboxing is available to all users and disabled by default: use `/sandbox enable` or `--sandbox`. Keys are user-level or enterprise-managed, not repository-overridable. See `copilot help sandbox`.
 
 | Option | Type | Description |
 |--------|------|-------------|
@@ -204,18 +211,21 @@ Command sandboxing is experimental: enable experimental features, then use `/san
 | `sandbox.addCurrentWorkingDirectory` | bool | Grant read/write access to the current working directory |
 | `sandbox.allowDevToolAccess` | bool | Auto-grant access to dev-tool caches, toolchains, and registry config |
 | `sandbox.allowBypass` | bool | Allow a per-command escape hatch out of the sandbox |
-| `sandbox.auth.git` / `sandbox.auth.gh` | bool | Inject git and `gh` credentials into sandboxed commands so authenticated git/`gh` operations keep working inside the sandbox. Tokens are never injected while the sandbox is disabled. |
+| `sandbox.auth.git` / `sandbox.auth.gh` | bool | Mask supported git/`gh` credentials with sentinels; approved-host HTTPS headers receive real values through a local proxy |
+| `sandbox.credentials.envVars` | map | Environment variable names → `injectHosts` rules; stores names/hosts, never secret values |
 | `sandbox.sandboxMcpServers` | bool | Spawn local (stdio) MCP servers inside the sandbox |
 | `sandbox.sandboxLspServers` | bool | Spawn language servers inside the sandbox |
 | `sandbox.userPolicy.filesystem.readwritePaths` | array | Extra paths granted read/write |
 | `sandbox.userPolicy.filesystem.readonlyPaths` | array | Extra paths granted read-only |
 | `sandbox.userPolicy.filesystem.deniedPaths` | array | Paths denied outright |
-| `sandbox.userPolicy.filesystem.clearPolicyOnExit` | bool | Reset the stored filesystem policy when the session ends |
+| `sandbox.userPolicy.filesystem.clearPolicyOnExit` | — | Unsupported key; do not set it. No verified substitute |
 | `sandbox.userPolicy.network.allowOutbound` | bool | Allow outbound network connections |
-| `sandbox.userPolicy.network.allowLocalNetwork` | bool | Allow connections to the local network |
+| `sandbox.userPolicy.network.allowLocalNetwork` | bool | Control host-loopback access; private-network/host-rule enforcement differs by OS (see sandbox help) |
 | `sandbox.userPolicy.network.proxy.url` | string | Proxy URL for sandboxed network access |
 | `sandbox.userPolicy.network.proxy.username` / `.password` | string | Proxy credentials (kept out of the URL) |
 | `sandbox.userPolicy.seatbelt.keychainAccess` | bool | Allow system keychain access from inside the sandbox (macOS) |
+
+Linux requires usable namespaces plus `bwrap`, `slirp4netns`, util-linux `unshare`/`nsenter`, iptables/ip6tables restore helpers, and writable `/dev/net/tun`; a Docker container may lack these even with `bwrap` installed. Credential substitution covers HTTPS headers, not request bodies/URLs or arbitrary files. On Windows, proxy/host rules require `allowLocalNetwork: true` and programs honoring the proxy; private-network exposure differs from Linux/macOS. Bypass skips masking and can expose host credentials. Managed `allowBypass: false` forbids disabling; when allowed, disable is session-only under a managed startup floor. `copilot sandbox ca status|create|trust|rotate|remove` manages the proxy CA; OS trust changes have security implications.
 
 #### Voice Settings
 
@@ -235,7 +245,8 @@ Command sandboxing is experimental: enable experimental features, then use `/san
 | `GITHUB_TOKEN` | Authentication token | Lowest |
 | `COPILOT_HOME` | Override config/state directory (default: ~/.copilot) | -- |
 | `COPILOT_MODEL` | Set default model (overridden by --model or /model) | -- |
-| `COPILOT_ALLOW_ALL` | Set "true" to allow all tools without confirmation | -- |
+| `COPILOT_ALLOW_ALL` | Truthy spellings auto-approve tools; exactly `"true"` also trusts cwd configuration (including executable hooks/MCP/plugins) | -- |
+| `COPILOT_AUTO_TIER` | Auto routing profile; requires Auto model. Stored enum values and account-enabled picker choices can differ; verify `/model` rather than inferring availability from a successful config write | Flag/persisted setting override env |
 | `COPILOT_ASSISTED_APPROVAL` | Review tool permission requests with the assisted-approval safety judge (same as `--assisted-approval`) | -- |
 | `COPILOT_AUTO_UPDATE` | Set "false" to disable auto-updates | -- |
 | `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` | Comma-separated additional dirs for instruction files | -- |
@@ -255,7 +266,7 @@ Command sandboxing is experimental: enable experimental features, then use `/san
 | `NO_COLOR` | Disable colored output (standard convention) | -- |
 | `COPILOT_DISABLE_TERMINAL_TITLE` | Disable updating the terminal tab/window title | -- |
 | `COPILOT_INLINE_IMAGE_LIMIT` | Override the `inlineImageLiveWindow` setting | -- |
-| `COPILOT_INLINE_IMAGES_HERDR` | Set "1" to opt in to inline images inside a herdr pane, once `inlineImages` is on | -- |
+| `COPILOT_INLINE_IMAGES_HERDR` | Override automatic herdr image detection; requires renderer support and does not bypass other restrictions | -- |
 | `COPILOT_MULTIPLEXER` | Override which terminal multiplexer the CLI believes it is running directly inside: "tmux", "herdr", or "none"; set it when detection guesses wrong | -- |
 | `COPILOT_SKILLS_DIRS` | Additional directories to search for skills | -- |
 | `COPILOT_PLUGIN_DIR_ONLY` | Load plugins only from directories passed with `--plugin-dir` | -- |
@@ -267,11 +278,15 @@ Command sandboxing is experimental: enable experimental features, then use `/san
 | `COPILOT_PROXY_KERBEROS_SPN` | Service principal name for Kerberos/Negotiate proxy auth | Over `proxyKerberosServicePrincipal` |
 | `CI`, `BUILD_NUMBER`, `RUN_ID`, `SYSTEM_COLLECTIONURI` | CI environment detection (disables auto-update) | -- |
 
+Authentication normally checks `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, then `GITHUB_TOKEN` ahead of stored accounts. **Codespaces exception:** its auto-injected `GITHUB_TOKEN` does not override a `/login` account; explicitly exported tokens still do. Never type real tokens into shared command lines or screenshots.
+
 #### Custom Model Provider (BYOK) Variables
 
 | Variable | Description |
 |----------|-------------|
 | `COPILOT_PROVIDER_BEARER_TOKEN` | Bearer token for the provider; takes precedence over `COPILOT_PROVIDER_API_KEY` |
+| `COPILOT_PROVIDER_API_KEY_COMMAND` | Trusted shell command that prints a fresh key for each provider request; takes precedence over static API key |
+| `COPILOT_PROVIDER_VISION` | Set `"true"` only if the provider model accepts images; otherwise BYOK is treated as text-only |
 | `COPILOT_PROVIDER_WIRE_API` | API format: `completions` (default) or `responses` |
 | `COPILOT_PROVIDER_TRANSPORT` | Transport: `http` (default) or `websockets` |
 | `COPILOT_PROVIDER_AZURE_API_VERSION` | Azure API version when using provider type `azure` |
@@ -284,6 +299,8 @@ Command sandboxing is experimental: enable experimental features, then use `/san
 #### OpenTelemetry / Monitoring Variables
 
 Run `copilot help monitoring` for configuration examples.
+
+Environment variables are one configuration path. User/managed `telemetry.headersProvider` supplies exporter headers, and managed telemetry can define or lock exporter/content-capture settings. Review precedence in monitoring help. Capturing prompts/responses may export private code and secrets; leave content capture off for this workshop.
 
 | Variable | Description |
 |----------|-------------|
@@ -331,13 +348,17 @@ Run `copilot help monitoring` for configuration examples.
 | `--allow-all-tools` | Allow all tools without confirmation |
 | `--allow-all-paths` | Disable file path verification |
 | `--allow-all-urls` | Allow all URLs without confirmation |
-| `--assisted-approval` | Review tool permission requests with the assisted-approval safety judge instead of approving them outright (equivalent to the `assisted` mode of `/permissions`); takes precedence over `--allow-all-tools` when the judge engages, and requires `--experimental` or `enabledFeatureFlags.AUTO_APPROVAL` |
-| `--sandbox` | Enable command sandboxing for the session at launch; not listed in `copilot --help` — see `copilot help sandbox` |
-| `--add-dir <directory>` | Add directory to allowed list (repeatable) |
+| `--assisted-approval` | Probabilistic judge, not a security boundary; explicit `AUTO_APPROVAL` disable or managed policy can block it; no experimental prerequisite |
+| `--sandbox` | Enable command sandboxing for this session; host prerequisites and managed policy apply |
+| `--add-dir <directory>` | Add file access and trust that root's skills/agents (repeatable) |
+| `--trust-folder` | Trust resolved cwd configuration for one new prompt-mode session; no saved trust or tool/path/URL approvals |
 | `--disallow-temp-dir` | Prevent auto-access to system temp directory |
 | `--available-tools [tools...]` | Only these tools visible to model |
 | `--excluded-tools [tools...]` | These tools hidden from model |
 | `--autopilot` | Enable autopilot mode |
+| `--fleet` | Parallel orchestration with `-i`, `-p`, or piped stdin |
+| `--auto-tier <profile>` | Select exact advertised Auto routing profile |
+| `--dynamic-retrieval skills=on\|off` | Control skill retrieval and persist its preference |
 | `--max-autopilot-continues <n>` | Limit autopilot rounds (default: 5) |
 | `--no-ask-user` | Disable agent questions |
 | `--agent <agent>` | Use a specific custom agent |
@@ -345,10 +366,12 @@ Run `copilot help monitoring` for configuration examples.
 | `--max-ai-credits <credits>` | Set a session AI credit limit |
 | `--usage-output-file <file>` | Write final usage statistics as JSON to the specified file |
 | `--session-id <id>` | Resume a session/task by ID or set a UUID for a new session |
-| `--remote-export` | Export session to GitHub web/mobile read-only |
+| `--remote-export` | Rejected; the documented read-only history control is `--sync-session=on\|off`. Keep it off for this workshop |
 | `--remote` | Enable remote control of your session from GitHub web and mobile |
-| `--no-remote` | Disable remote control |
-| `--no-remote-export` | Disable remote export |
+| `--no-remote` | Rejected; `/remote off` controls live control separately from history sync |
+| `--no-remote-export` | Accepted but unlisted; runtime semantics unverified. Prefer documented `--sync-session=off` for history sync |
+| `--sync-session[=on\|off]` | Read-only account-history sync for this run, without incoming control |
+| `--host-environment <name>` / `--host-compute-id <id>` | Optional headless hosted environment and stable compute identity; not core exercises |
 | `--enable-memory` | Enable memory in prompt mode |
 | `--allow-all-mcp-server-instructions` | Include initialization instructions from all MCP servers |
 | `--no-bash-env` | Disable BASH_ENV support |
@@ -357,9 +380,11 @@ Run `copilot help monitoring` for configuration examples.
 | `--enable-all-github-mcp-tools` | Enable all GitHub MCP tools |
 | `--disable-builtin-mcps` | Disable built-in MCP servers |
 | `--disable-mcp-server <name>` | Disable specific MCP server (repeatable) |
+| `--enable-mcp-server <name>` | Re-enable a settings-disabled server for this run only |
+| `--mcp-github-auth <server=origin>` | Approve account credential destination for an explicit additional-config server; never put a token in this argument |
 | `--plugin-dir <directory>` | Load plugin from local dir (repeatable) |
 | `--extension-sdk-path <directory>` | Override the bundled `@github/copilot-sdk` injected into extension subprocesses with a local `copilot-sdk/` folder; invalid paths fall back to the bundled SDK |
-| `--secret-env-vars [vars...]` | Redact env var values from output |
+| `--secret-env-vars [vars...]` | Strip named variables from shell/MCP environments and mask some outputs; secrets arriving via other tool-result routes can still reach model/history |
 | `--no-custom-instructions` | Disable AGENTS.md loading |
 | `--output-format <format>` | Output as text or json (JSONL) |
 | `--stream <mode>` | Streaming: on or off |
@@ -382,21 +407,22 @@ Run `copilot help monitoring` for configuration examples.
 
 ### The `/env` Command
 
-Use `/env` inside an interactive session to see a comprehensive view of the loaded environment:
+Use `/env` inside an interactive session to inspect loaded environment details:
 
 ```
 /env
 ```
 
-This displays all eight loaded environment kinds:
+It reports loaded environment kinds where available:
 - Active instruction files and their sources
 - Loaded MCP servers and their status
 - Available skills (project, personal, built-in)
 - Available agents
 - Loaded hooks
 - Installed plugins
-- Configured LSP servers
 - Loaded extensions
+
+Do not treat `/env` as a complete LSP inventory: a configured server can be absent there. Use `/lsp show` or `copilot lsp list --json` to inspect configured language servers separately.
 
 ### The `copilot app` Subcommand
 
@@ -425,10 +451,11 @@ This displays documentation on configuring OpenTelemetry for Copilot CLI observa
 
 **Steps:**
 
-1. View your current user settings:
+1. Inspect selected user settings rather than dumping credential-bearing configuration:
 
    ```bash
-   cat ~/.copilot/settings.json | jq .
+   copilot config theme
+   copilot config mouse
    ```
 
 2. Check the available settings:
@@ -448,7 +475,7 @@ This displays documentation on configuring OpenTelemetry for Copilot CLI observa
    Or set it from inside a session, which writes to `settings.json` for you:
 
    ```bash
-   copilot
+   copilot --sync-session=off
    ```
 
    ```
@@ -462,20 +489,29 @@ This displays documentation on configuring OpenTelemetry for Copilot CLI observa
 
    ```bash
    # These flags update settings.json automatically
-   copilot --mouse off
-   copilot --bash-env on
+   copilot --sync-session=off --mouse off
+   copilot --sync-session=off --bash-env on
    ```
 
 6. Target repository scope instead of your user scope:
 
    ```bash
-   copilot
+   copilot --sync-session=off
    ```
 
    ```
-   /settings --repo theme dim     # writes .github/copilot/settings.json
-   /settings --local theme github # writes .github/copilot/settings.local.json
+   /settings --repo model auto          # supported repository key
+   /settings --local includeCoAuthoredBy off # supported local key
    ```
+
+   Repository/local schemas accept only a subset of user settings; `theme` is user-only. From the shell, use scoped commands:
+   ```bash
+   copilot config --repo model auto
+   copilot config --local includeCoAuthoredBy off
+   copilot config --repo --list --json | jq '{model, includeCoAuthoredBy}'
+   copilot config --rm allowedUrls github.com
+   ```
+   The last command removes only that list item if present; use it only for an exercise-owned grant. Unset reads can exit with status 1. JSON listings/MCP files may contain secrets; select fields and do not share raw output.
 
 **Expected Outcome:**
 You can view, modify, and verify settings at user and repository scope, and you understand that certain CLI flags persist their values to `settings.json`.
@@ -486,31 +522,41 @@ You can view, modify, and verify settings at user and repository scope, and you 
 
 **Steps:**
 
-1. Set a custom config directory:
+1. Set a unique custom config directory. Record any existing variable values first so you can restore them:
 
    ```bash
-   export COPILOT_HOME=/tmp/copilot-test
-   copilot -p "Reply with OK"
-   ls /tmp/copilot-test/
+   WORKSHOP_COPILOT_HOME=$(mktemp -d)
+   export COPILOT_HOME="$WORKSHOP_COPILOT_HOME"
+   copilot --sync-session=off
+   # Authenticate inside this isolated home if needed, then exit
+   copilot --sync-session=off -p "Reply with OK"
+   ls "$COPILOT_HOME/"
    ```
 
    > [!NOTE]
    > Start a session before listing the directory. `copilot --version` exits before the config directory is initialized, so the directory would not exist yet.
+   > Do not assume authentication is available in an isolated home. Use only already-approved credentials; if unavailable, mark the authenticated steps blocked. Never copy or print your normal `config.json`, and do not log in just to complete this exercise.
 
 2. Set the default model via environment:
 
    ```bash
    export COPILOT_MODEL=auto
-   copilot -p "What model are you using?"
+   copilot --sync-session=off -p "What model are you using?"
    ```
+
+   Model self-report is not dispatch proof; inspect the session's `/model` information and account availability.
 
 3. Add extra instruction directories:
 
    ```bash
-   mkdir -p /tmp/team-instructions
-   echo "Always use TypeScript" > /tmp/team-instructions/AGENTS.md
-   export COPILOT_CUSTOM_INSTRUCTIONS_DIRS="/tmp/team-instructions"
-   copilot
+   mkdir -p "$WORKSHOP_COPILOT_HOME/team-instructions"
+   export COPILOT_CUSTOM_INSTRUCTIONS_DIRS="$WORKSHOP_COPILOT_HOME/team-instructions"
+   ```
+
+   In your editor, create `typescript.instructions.md` in that directory, containing `Always use TypeScript` (optionally with `applyTo: "**"` frontmatter). Additional instruction directories discover `*.instructions.md` files; an `AGENTS.md` placed there is not a substitute. Then launch:
+
+   ```bash
+   copilot --sync-session=off
    ```
 
    ```
@@ -521,15 +567,16 @@ You can view, modify, and verify settings at user and repository scope, and you 
 
    ```bash
    export COPILOT_EDITOR="code --wait"
-   copilot
-   # Ctrl+Y opens the plan in VS Code
+   copilot --sync-session=off
+   # Use the plan UI's displayed edit action; terminal shortcuts may differ
    ```
 
-5. Clean up:
+5. Restore recorded variable values when done; if they were originally unset:
 
    ```bash
    unset COPILOT_HOME COPILOT_MODEL COPILOT_CUSTOM_INSTRUCTIONS_DIRS COPILOT_EDITOR
-   rm -rf /tmp/copilot-test /tmp/team-instructions
+   # Verify this is the unique directory created in Step 1; it can contain credentials
+   rm -r -- "${WORKSHOP_COPILOT_HOME:?exercise home is unset}"
    ```
 
 **Expected Outcome:**
@@ -544,7 +591,7 @@ You can control Copilot behavior via environment variables and understand their 
 1. Check IDE connection status:
 
    ```bash
-   copilot
+   copilot --sync-session=off
    ```
 
    ```
@@ -574,11 +621,11 @@ You understand how Copilot integrates with IDEs and can customize the behavior.
 
 ### Exercise 4: Streamer Mode and Accessibility
 
-**Goal:** Configure privacy and accessibility settings.
+**Goal:** Configure selected UI metadata visibility and accessibility, not secret protection.
 
 **Steps:**
 
-1. Enable streamer mode (hides preview model names and quota details) in `settings.json`:
+1. Merge `streamerMode: true` into personal `settings.json` in your editor; do not overwrite other settings. Restart and verify that preview names are replaced by `Hidden Model` labels in `/model`. Streamer mode hides selected model/quota/UI metadata, not arbitrary sensitive content. `/settings show streamerMode` can read it, but `/settings streamerMode on` cannot edit it:
 
    ```json
    { "streamerMode": true }
@@ -587,27 +634,29 @@ You understand how Copilot integrates with IDEs and can customize the behavior.
 2. Enable screen reader optimizations:
 
    ```bash
-   copilot --screen-reader
+   copilot --sync-session=off --screen-reader
    ```
 
 3. Disable color output for logging or plain terminals:
 
    ```bash
-   copilot --no-color
+   copilot --sync-session=off --no-color
    # or
-   NO_COLOR=1 copilot
+   NO_COLOR=1 copilot --sync-session=off
    ```
 
 4. Disable rich diff rendering:
 
    ```bash
-   copilot --plain-diff
+   copilot --sync-session=off --plain-diff
    # or
-   PLAIN_DIFF=true copilot
+   PLAIN_DIFF=true copilot --sync-session=off
    ```
 
 **Expected Outcome:**
 You can configure Copilot for streaming, screen readers, and plain-text environments.
+
+Verify UI visibility in a live session. Streamer mode does not redact prompts, secrets, transcripts, logs, exports, or synced history. `/clear` is not erasure; memory and persistent records are separate.
 
 ### Exercise 5: Team Configuration Standardization
 
@@ -642,10 +691,10 @@ You can configure Copilot for streaming, screen readers, and plain-text environm
    }
    ```
 
-3. Commit these as repository settings so everyone on the project picks them up:
+3. Share only repository-supported keys as repository settings. Keep `compactPaste`, `updateTerminalTitle`, `beep`, and `customAgents.defaultLocalOnly` in each user's personal settings rather than copying the whole template into repository scope. For this exercise, use a disposable repository without making a commit:
 
    ```bash
-   copilot
+   copilot --sync-session=off
    ```
 
    ```
@@ -660,7 +709,7 @@ You can configure Copilot for streaming, screen readers, and plain-text environm
 5. Verify the announcements appear on startup:
 
    ```bash
-   copilot
+   copilot --sync-session=off
    # One of the announcement messages should appear in the banner
    ```
 
@@ -676,13 +725,13 @@ You can create and distribute team-standard configurations across user and repos
 1. Enable debug logging:
 
    ```bash
-   copilot --log-level debug
+   copilot --sync-session=off --log-level debug
    ```
 
 2. Capture everything into a custom log directory:
 
    ```bash
-   copilot --log-level all --log-dir ./my-logs
+   copilot --sync-session=off --log-level all --log-dir ./my-logs
    ```
 
    Valid levels are `none`, `error`, `warning`, `info`, `debug`, `all`, and `default`. The equivalent setting is `logLevel`.
@@ -699,7 +748,7 @@ You can create and distribute team-standard configurations across user and repos
 
    ```bash
    # Use the system ripgrep instead of bundled
-   USE_BUILTIN_RIPGREP=false copilot
+   USE_BUILTIN_RIPGREP=false copilot --sync-session=off
    ```
 
 **Expected Outcome:**
@@ -721,7 +770,7 @@ You can enable detailed logging and understand the log directory structure.
 2. Start a session with an initial limit (the minimum is 30 AI credits):
 
    ```bash
-   copilot --max-ai-credits 30
+   copilot --sync-session=off --max-ai-credits 30
    ```
 
 3. Inspect or change the limit from inside the session:
@@ -740,7 +789,7 @@ You can enable detailed logging and understand the log directory structure.
 5. Capture the final usage numbers from a scripted run as JSON:
 
    ```bash
-   copilot -p "Summarize the README" --allow-all-tools --usage-output-file ./usage.json
+   copilot --sync-session=off -p "Read README.md with a file tool and summarize it. No shell, writes, network, or agents." --usage-output-file ./usage.json
    jq . ./usage.json
    ```
 
@@ -762,10 +811,10 @@ You can set, inspect, and clear a session AI credit limit, and export final usag
 - ✅ `compactPaste` auto-collapses large pastes into compact tokens
 - ✅ `copyOnSelect` enables clipboard integration
 - ✅ `companyAnnouncements` broadcasts team messages on startup
-- ✅ `includeCoAuthoredBy` auto-adds Co-authored-by to commits
+- ✅ `includeCoAuthoredBy` instructs the agent to add Co-authored-by; inspect any eventual commit rather than assuming enforcement
 - ✅ `updateTerminalTitle` shows current intent in terminal title
 - ✅ IDE integration is controlled via `ide.autoConnect` and `ide.openDiffOnEdit`
-- ✅ `/ide` connects to IDE workspaces, and `streamerMode` hides sensitive info
+- ✅ `/ide` connects to workspaces; streamer mode hides selected UI metadata, not arbitrary sensitive data
 - ✅ `/copy` copies last response to clipboard
 - ✅ Environment variables control auth, model, editor, and instruction paths
 - ✅ `COPILOT_HOME` overrides the config directory
@@ -787,15 +836,24 @@ You can set, inspect, and clear a session AI credit limit, and export final usag
 - ✅ `COPILOT_OFFLINE` enables offline mode with local model providers
 - ✅ `COPILOT_GH_HOST` overrides GitHub hostname for Copilot CLI only
 - ✅ `footer.show*` settings control individual status bar items
-- ✅ `sandbox.*` settings define the command sandboxing policy (experimental; see `copilot help sandbox`)
-- ✅ `--sandbox` turns sandboxing on at launch; `sandbox.auth.git` / `sandbox.auth.gh` control credential injection
+- ✅ `sandbox.*` defines user/managed policy; no experimental prerequisite
+- ✅ Sandbox credential masking uses approved-host HTTPS-header substitution; bypass exposes ordinary host access
 - ✅ `defaultMode` and `defaultPermissionMode` persist the mode and permission mode new interactive sessions start in
 - ✅ `--assisted-approval` routes permission requests through the assisted-approval safety judge
 - ✅ `copilot app` opens the GitHub Copilot app in the current directory; `/app` does the same from a session
 - ✅ Session limits are opt-in via `--max-ai-credits` and `/limits` (soft cap, minimum 30 AI credits)
 - ✅ `--usage-output-file` writes final usage statistics as JSON for scripted runs
-- ✅ OpenTelemetry is configured entirely through `COPILOT_OTEL_*` and `OTEL_*` environment variables
+- ✅ OpenTelemetry supports environment and user/managed telemetry settings; content capture can expose private data
 - ✅ `copilot help config` and `copilot help environment` are the authoritative references
+
+### Optional Cross-Module Controls
+
+- `copilot init`, `copilot instruction list --json`, and `copilot lsp list --json` support shell-based setup/inspection.
+- `autoTier` controls Auto routing; skill dynamic retrieval persists its choice. Inspect actual routing/loading rather than asserting a specific runtime model.
+- `copilot --sync-session=off --plan --mode autopilot -p "Plan and implement a focused test improvement"` supports autonomous plan implementation; permissions and `--max-autopilot-continues` still bound continuation, not every side effect.
+- Custom subagents opt into repository instructions with `include-custom-instructions: true`. Authored `models`, `modelPolicy`, and `reasoningEffort` interact with `/subagents` overrides and Auto; local agent-scoped hooks follow trust/policy controls.
+- History sync differs from remote control and hosted execution. Optional `copilot sessions import FILE --dry-run` and `copilot memories import FILE --dry-run` validate prepared JSONL; imports are not required.
+- `~/.copilot/providers.json` optionally declares named BYOK providers/models. It takes precedence over provider environment routing when populated, stores credentials as plain text, and does not expand `$KEY` strings. Review the official provider schema and validate a chosen provider before use.
 
 ## Workshop Complete! 🎉
 

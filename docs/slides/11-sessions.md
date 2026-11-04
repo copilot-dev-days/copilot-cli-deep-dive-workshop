@@ -75,7 +75,7 @@ A session maintains:
 ```
 Start           Work            Exit
   │               │               │
-copilot    prompts + tools    /exit or Ctrl+C
+copilot    prompts + tools    /exit or Ctrl+C twice
   │               │               │
   └───── Session persists ────────┘
                   │
@@ -88,19 +88,24 @@ copilot    prompts + tools    /exit or Ctrl+C
 
 | Command | What it does |
 |---------|-------------|
-| `/session` | Show session info (ID, duration, files) |
-| `/usage` | Token consumption and API calls |
+| `/session` / `/session info` | Open session manager / show current-session details |
+| `/usage` | Tokens, duration, edited lines, account and per-model usage |
 | `/model` | Switch the active model |
 | `/rename NAME` | Name your session for easy finding |
-| `/clear` | Abandon session and start fresh (session is discarded) |
+| `/clear` | Fresh active conversation, not transcript/log/memory erasure |
 | `/new` | Start new conversation (old session stays backgrounded) |
+| `/fork [name]` / `/branch` | Copy conversation into a new session; same project files |
 | `/resume` | Switch to a previous session (picker, or pass ID/name) |
 | `--continue` | Resume the most recent session from CLI |
 | `--remote` / `/remote` | Enable web/mobile remote control |
-| `--remote-export` | Export read-only to GitHub web/mobile |
+| `--remote-export` | **Removal candidate:** rejected; use `--sync-session=on` |
+| `--sync-session=on\|off` | Upload history for a view-only account copy, or disable sync; no incoming control |
 | `/share` | Export the session you're in (markdown, HTML, gist, or link) |
-| `/rewind` (alias `/undo`) | Rewind the last turn and revert file changes |
-| `/exit` | Exit the CLI; `/exit print` prints the session after exiting alt screen |
+| `/rewind` (alias `/undo`) | Pick earlier turn; file restore requires file rewind enabled at session start |
+| `/exit` | Close current session; quit only when last session closes. `/exit print` exits CLI and offers transcript printing |
+
+`/session info` opens a details view; press Enter to dismiss it.
+`/session` opens the picker, not an edit/command audit.
 
 ---
 
@@ -137,7 +142,7 @@ Manage it with subcommands, not `rm`:
 ```
 /session info          # details about this session
 /session checkpoints   # list checkpoints
-/session files         # files touched
+/session files         # session workspace files, not all project edits
 /session plan          # current plan
 /session rename [name] # rename or auto-name
 /session cleanup       # remove stale records
@@ -152,15 +157,20 @@ Manage it with subcommands, not `rm`:
 
 ```bash
 copilot -n "auth-fix"                 # name a new session
-copilot --session-id <uuid>           # resume/set exact ID
-copilot --resume[=<id|prefix|name>]   # picker when value omitted
+copilot --resume                     # picker; optionally pass =ID, prefix, or name
 copilot --continue                    # most recent session
-copilot --connect[=<sessionId>]        # connect to remote session
-copilot --remote-export               # read-only web/mobile copy
+copilot --connect                     # connect to remote session via picker
+copilot --sync-session=on             # read-only account history, not control
 copilot -p "Summarize" --silent       # response only, no stats
 ```
 
 `--resume` also accepts task IDs and unique ID prefixes.
+Use `copilot --session-id "$SESSION_ID"` for an exact ID after setting that variable;
+`--connect=SESSION_ID` selects a particular remote session.
+
+Sync uploads session data and defaults on when account policy permits.
+For local-only exercises, append `--sync-session=off` to every invocation.
+Gist/link sharing and remote activation are optional external actions.
 
 ---
 
@@ -180,7 +190,7 @@ copilot -p "Summarize" --silent       # response only, no stats
 /list-dirs
 ```
 
-Copilot can only access directories you've allowed
+Path controls are heuristic, not OS isolation. Adding a root also trusts its skills/agents.
 
 ---
 
@@ -191,10 +201,26 @@ Copilot can only access directories you've allowed
 | Switching to unrelated task | `/new` (keeps old session) or `/clear` (abandons) |
 | Confused responses | `/new` |
 | Context limit approaching | `/compact` first, then `/new` if needed |
-| Sensitive info discussed | `/clear` and `/exit` |
+| Sensitive info discussed | Stop sharing, rotate exposed secrets; handle persistent records separately |
 | Session becomes slow | `/new` |
 
 > `/clear` **abandons** the session — `/new` keeps it **backgrounded**
+
+Neither guarantees forgetting: interactive memory defaults on; transcripts, logs,
+exports, and synced history remain separate. Streamer mode hides selected UI metadata only.
+
+---
+
+## Optional Recovery and Hosting
+
+- `/remote` shows status; `/remote on` requires configured incoming connections
+- `/remote off` stops live remote control; view-only history sync still uploads data
+- `--host-environment` / `--host-compute-id` describe headless hosted execution
+- `copilot sessions import FILE --dry-run` validates session JSONL
+- `copilot memories import FILE --dry-run` validates memory JSONL
+- Imports/hosting are optional references; provisioning/runtime checks remain
+- File rewind must be enabled at session start; otherwise only conversation rewind is available
+- Rewind protects files you edited later; inspect the restore choice
 
 ---
 
@@ -208,7 +234,7 @@ Open **Module 11** in `docs/workshop/11-sessions.md`
 - **Exercise 2** — Resume a session
 - **Exercise 3** — Session slash commands
 - **Exercise 4** — Working directory management
-- **Exercise 5** — Clearing strategies
+- **Exercise 5** — Active-context clearing, not privacy/erasure
 - **Exercise 6** — Multiple sessions
 - **Exercise 7** — Export & sharing
 

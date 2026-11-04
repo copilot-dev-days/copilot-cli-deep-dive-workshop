@@ -73,6 +73,9 @@ style: |
 
 ## Configuration File
 
+Keep account-history sync off on every workshop launch: `copilot --sync-session=off`.
+This is separate from remote control and does not erase earlier uploads.
+
 User settings live in `~/.copilot/settings.json`:
 
 ```json
@@ -103,7 +106,11 @@ Override location: `COPILOT_HOME` env var
 | Repo (personal) | `.github/copilot/settings.local.json` | `/settings --local ...` |
 | Org-managed | Delivered by policy | Read-only, `managed (read-only)` |
 
-Managed settings apply on top of yours and cannot be edited from the CLI
+Locked managed settings cannot be edited; some managed defaults are overridable.
+
+Repository/local settings support **only a subset** of user keys; theme,
+compact paste, and subagent concurrency are user-only.
+Shell `config` reads inspect a settings file, not the environment-resolved active model.
 
 **Model scopes** — `/model --repo` / `--local` set the repo default,
 `/config model` sets your user default, `/model plan` (or `--plan`) sets the plan-mode model
@@ -155,17 +162,23 @@ Grouped UI/runtime controls include:
 | Local agents | `customAgents.defaultLocalOnly` |
 | Footer | `footer.show*`, custom `statusLine`, `/footer` |
 
+`enabledPlugins` and `extraKnownMarketplaces` are **maps**.
+`strictKnownMarketplaces` is a **managed allowlist array**.
+`disabledHooks` contains **content-hash IDs**, not names.
+
 ---
 
 ## Permissions, Sandbox & Voice
 
-- `permissions.allow`, `.ask`, `.deny` define persistent rules; deny wins
+- `permissions.allow`, `.ask`, `.deny` are **managed policy rules**, not personal preferences
 - `sandbox.*` controls filesystem/network policy, local MCP/LSP isolation,
-  bypass, and optional `git` / `gh` credential injection
+  bypass, and `git` / `gh` sentinel masking with approved-host HTTPS headers
 - `voice.enabled` and `voice.selectedModel` configure `/voice`
 - `allowedUrls` / `deniedUrls` and `defaultPermissionMode` set startup policy
 
 > Remote HTTP/SSE MCP servers are outside the command sandbox.
+> No experimental prerequisite. Linux needs namespaces/helpers beyond `bwrap`; bypass can expose real credentials.
+> `sandbox.userPolicy.filesystem.clearPolicyOnExit` is unsupported; do not set it.
 
 ---
 
@@ -185,13 +198,18 @@ Grouped UI/runtime controls include:
 | `COPILOT_HOOK_*` / `COPILOT_PLUGIN_DIR_ONLY` | Hook/plugin policy |
 | `COPILOT_ASSISTED_APPROVAL` | Env form of `--assisted-approval` |
 | `COPILOT_MULTIPLEXER` | Override detected multiplexer: `tmux`, `herdr`, `none` |
-| `COPILOT_INLINE_IMAGES_HERDR` | Set `1` for inline images under herdr (once `inlineImages` is on) |
+| `COPILOT_INLINE_IMAGES_HERDR` | Override automatic detection; renderer/other restrictions still apply |
 | `PLAIN_DIFF` | Disable rich diffs |
 | `USE_BUILTIN_RIPGREP` / `USE_TGREP` / `USE_TGREP_WARM_START` | Search backend controls |
 | `COPILOT_DISABLE_TERMINAL_TITLE` / `COPILOT_INLINE_IMAGE_LIMIT` | Terminal rendering controls |
 | `NO_COLOR` | Disable color output |
 
+Extra instruction directories discover `*.instructions.md`, not an `AGENTS.md` substitute.
+
 > `copilot help environment` is the authoritative reference
+
+Exact `COPILOT_ALLOW_ALL=true` also trusts cwd configuration; other truthy values only approve tools.
+Codespaces' auto-injected token does not override `/login`; explicit exports do.
 
 ---
 
@@ -206,11 +224,11 @@ Grouped UI/runtime controls include:
 | `--acp` | Agent Client Protocol server |
 | `--no-ask-user` | Fully autonomous |
 | `--max-autopilot-continues` | Limit autopilot rounds |
-| `--secret-env-vars` | Redact env values |
+| `--secret-env-vars` | Strip named shell/MCP env values; other tool-result routes can still leak |
 | `--no-custom-instructions` | Skip AGENTS.md |
 | `--screen-reader` | Accessibility mode |
 | `--plain-diff` | Disable rich diffs |
-| `--sandbox` | Enable command sandboxing at launch (needs `--experimental`) |
+| `--sandbox` | Enable sandboxing; host and managed bypass policy apply |
 | `--assisted-approval` | Route approvals via safety judge |
 | `--context <tier>` | Context window tier |
 | `--log-dir` / `--log-level` | Logging control |
@@ -218,7 +236,8 @@ Grouped UI/runtime controls include:
 | `--max-ai-credits` | Session AI credit limit |
 | `-n, --name` / `--session-id` | Name or identify a session |
 | `--resume` / `--continue` / `--connect` | Resume or connect |
-| `--remote` / `--remote-export` | Control or read-only web/mobile access |
+| `--remote` / `--sync-session=on\|off` | Live control / read-only history (separate) |
+| `--remote-export` / `--no-remote` | Rejected; history sync and `/remote off` are separate controls |
 | `--allow-tool` / `--deny-tool` / `--allow-url` | Permission rules |
 | `--available-tools` / `--excluded-tools` | Tool visibility |
 | `--additional-mcp-config` / `--enable-all-github-mcp-tools` | MCP startup controls |
@@ -233,7 +252,8 @@ Grouped UI/runtime controls include:
 
 ```text
 /env                     # loaded instructions, MCPs, skills, agents,
-                         # hooks, plugins, LSPs, and extensions
+                         # hooks, plugins, and extensions
+/lsp show                # inspect configured language servers separately
 /app                     # open Copilot app from a session
 ```
 
@@ -251,8 +271,12 @@ copilot help environment # authoritative environment reference
 ```
 /ide          # Connect to IDE workspace
 /copy         # Copy last response to clipboard
-/settings streamerMode on
 ```
+
+Streamer mode: merge `{"streamerMode":true}` into personal settings in your editor.
+`/settings show streamerMode` reads it; `/settings streamerMode on` cannot edit it.
+Restart and verify `Hidden Model` labels in `/model`. Hides selected UI metadata,
+not arbitrary secrets, prompts, logs, or exports.
 
 Config options:
 - `ide.autoConnect` — auto-connect on startup
@@ -277,8 +301,11 @@ Share via repository settings:
 
 ```
 /settings --repo model auto     # .github/copilot/settings.json
-/settings --local theme dim     # settings.local.json (uncommitted)
+/settings --local includeCoAuthoredBy off # supported local key
 ```
+
+Do not copy the whole user template into repo scope. Keep UI preferences personal;
+use a disposable repository without committing for this exercise.
 
 ---
 
@@ -287,8 +314,8 @@ Share via repository settings:
 Opt-in soft cap on AI credits for a session
 
 ```bash
-copilot --max-ai-credits 30     # minimum is 30
-copilot -p "..." --usage-output-file ./usage.json   # final usage as JSON
+copilot --sync-session=off --max-ai-credits 30     # minimum is 30
+copilot --sync-session=off -p "Read README.md with a file tool; summarize only." --usage-output-file ./usage.json
 ```
 
 ```
@@ -302,21 +329,32 @@ copilot -p "..." --usage-output-file ./usage.json   # final usage as JSON
 
 ---
 
-## Your Turn! 🚀
+## Scriptable Setup and Optional Controls
 
-Open **Module 13** in `docs/workshop/13-configuration.md`
+```bash
+copilot config theme
+copilot config --repo model auto
+copilot config --local includeCoAuthoredBy off
+copilot instruction list --json
+copilot lsp list --json
+```
 
-**Start from Exercise 1** and work through as many as you can
+`--trust-folder`: one-run configuration admission, not tool/path/URL approval.
+`--auto-tier` selects advertised Auto routing; dynamic skill retrieval persists.
+Stored routing enum values and account-enabled picker choices can differ; verify `/model`.
+`--fleet` accepts `-i`/`-p`/stdin; `--plan --mode autopilot` supports implementation.
 
-- **Exercise 1** — Explore settings.json and settings scopes
-- **Exercise 2** — Environment variable control
-- **Exercise 3** — IDE integration
-- **Exercise 4** — Streamer mode & accessibility
-- **Exercise 5** — Team configuration
-- **Exercise 6** — Logging and debugging
-- **Exercise 7** — Session limits, AI credits, and usage export
+---
 
-⏱️ You have **~14 minutes**
+## Trust, Routing, and Persistent Data
+
+- Custom subagents opt into repo instructions; model policy and Auto affect dispatch
+- MCP `--enable-mcp-server` is one-run; `--mcp-github-auth server=origin` approves a destination, never a token
+- Optional hosted environments and JSONL imports need targeted runtime checks
+- BYOK fresh-key commands and vision opt-in depend on the provider
+- OpenTelemetry supports environment **and user/managed settings**, including header providers
+- Content capture can export private data; keep it off here
+- `/clear` is not transcript/log/memory/sync erasure
 
 ---
 
@@ -330,3 +368,21 @@ Installation → Modes → Instructions → Tools → MCP → Skills → Plugins
 **Next steps:** Practice daily, create custom agents, share skills with your team
 
 > Resources: [docs.github.com/copilot](https://docs.github.com/en/copilot) · [agentskills.io](https://agentskills.io)
+
+---
+
+## Your Turn! 🚀
+
+Open **Module 13** in `docs/workshop/13-configuration.md`
+
+**Start from Exercise 1** and work through as many as you can
+
+- **Exercise 1** — Selected-field inspection and scoped shell/settings commands
+- **Exercise 2** — Isolated temporary home, approved credentials only, external `*.instructions.md`, restore prior variables
+- **Exercise 3** — IDE integration
+- **Exercise 4** — File-based streamer mode, selected metadata only; accessibility
+- **Exercise 5** — Team configuration
+- **Exercise 6** — Logging and debugging
+- **Exercise 7** — Session limits, AI credits, and usage export
+
+⏱️ You have **~14 minutes**

@@ -108,8 +108,9 @@ Workspace MCP configuration can live in `.mcp.json` or `.github/mcp.json`:
 > # Add a remote server with auth header
 > copilot mcp add --transport http --header "Authorization: Bearer token" stripe https://mcp.stripe.com
 >
-> # Add a local server with environment variables
-> copilot mcp add github --env GITHUB_PERSONAL_ACCESS_TOKEN=github_pat_xxx -- npx -y @modelcontextprotocol/server-github
+> # Removal candidate: @modelcontextprotocol/server-github is not supported;
+> # do not install it. Use the built-in github-mcp-server instead.
+> copilot mcp get github-mcp-server
 >
 > # Remove an MCP server
 > copilot mcp remove memory
@@ -121,6 +122,12 @@ Workspace MCP configuration can live in `.mcp.json` or `.github/mcp.json`:
 > Additional options for `mcp add`: `--transport` (stdio/http/sse), `--env` (repeatable), `--header` (repeatable), `--timeout`, `--tools` (filter), `--json`, and `--show-secrets`.
 >
 > This is useful for scripting MCP configuration and managing servers in CI/CD environments.
+
+> **Removal candidate — original unsupported package example, do not run:**
+> ```text
+> copilot mcp add github --env GITHUB_PERSONAL_ACCESS_TOKEN=github_pat_xxx -- npx -y @modelcontextprotocol/server-github
+> ```
+> Use the built-in `github-mcp-server` instead. Header/env examples are schematic; prefer interactive secret entry and never put real credentials in shared shell history or process arguments.
 
 ### MCP Remote Server Auto-Retry
 
@@ -135,10 +142,10 @@ MCP servers using OAuth authentication support HTTPS redirect URIs via a self-si
 Copilot CLI includes a built-in GitHub MCP server with a default subset of tools. You can customize which tools are available:
 
 ```bash
-# Add a specific tool to the GitHub MCP server
-copilot --add-github-mcp-tool "create_issue"
+# Select explicit tools instead of the default subset
+copilot --add-github-mcp-tool "issue_write"
 
-# Add a toolset (group of related tools)
+# Select a toolset instead of the default subset
 copilot --add-github-mcp-toolset "repos"
 
 # Enable ALL GitHub MCP tools (overrides --add-github-mcp-tool/toolset)
@@ -154,7 +161,13 @@ copilot --disable-mcp-server "my-custom-server"
 copilot --enable-mcp-server "my-custom-server"
 ```
 
-Use `--add-github-mcp-tool "*"` or `--add-github-mcp-toolset "all"` to enable everything. The `--disable-mcp-server` flag works for any MCP server (built-in or configured), and can be used multiple times. Its counterpart, `--enable-mcp-server`, turns a server that your settings disable back on for that run only — nothing is persisted — and it is also repeatable.
+Use `--add-github-mcp-tool "*"` or `--add-github-mcp-toolset "all"` to enable everything. Explicit tool/toolset selections replace the default subset; inspect the resulting inventory rather than assuming defaults remain. The `--disable-mcp-server` flag works for any MCP server (built-in or configured), and can be used multiple times. Its counterpart, `--enable-mcp-server`, turns a server that your settings disable back on for that run only — nothing is persisted — and it is also repeatable.
+
+Inspect `/mcp show github-mcp-server` for the actual tool inventory; notifications/issues may need additional toolsets. `copilot mcp enable NAME` and `disable NAME` persist settings, unlike launch-time flags.
+
+Issue and pull-request **listing** is not guaranteed in the default subset. For Exercise 1's listing prompts, launch with `copilot --add-github-mcp-toolset issues --add-github-mcp-toolset pull_requests` and verify the corresponding tools are connected. Repository-content access alone does not demonstrate issue/PR listing.
+
+For an explicitly configured session server, `--mcp-github-auth <server=origin>` approves sending the signed-in account credential to that destination. Use HTTPS (literal loopback HTTP is the exception); never put a token in this argument. `--allow-all-mcp-server-instructions` trusts instructions from all MCP servers: review those servers before broadening instruction trust.
 
 ## Hands-On Exercises
 
@@ -202,13 +215,13 @@ Copilot can access GitHub resources through the built-in MCP server.
 
 **Goal:** Add a remote MCP server (Exa search).
 
-[Exa](https://exa.ai) provides AI-powered web search, code search, and company research through a remote MCP server.
+[Exa](https://exa.ai) provides AI-powered web search and page fetching through a remote MCP server. Code search and company research depend on the tools actually exposed by the endpoint; do not assume dedicated tools are available.
 
 **Steps:**
 
-1. View current config file:
+1. Inspect server names/types without displaying credentials:
  ```bash
- cat ~/.copilot/mcp-config.json
+ copilot mcp list
  ```
 
 2. Add the server with `copilot mcp add`:
@@ -221,9 +234,10 @@ Copilot can access GitHub resources through the built-in MCP server.
  copilot mcp get exa
  ```
 
-4. Alternatively, edit the config file directly:
+4. To compare file-based setup, create a dedicated session file (do not overwrite personal configuration; the same-name session definition takes effect for this launch):
  ```bash
- cat > ~/.copilot/mcp-config.json << 'EOF'
+ test ! -e workshop-exa-mcp.json &&
+ cat > workshop-exa-mcp.json << 'EOF'
  {
  "mcpServers": {
  "exa": {
@@ -236,20 +250,20 @@ Copilot can access GitHub resources through the built-in MCP server.
  EOF
  ```
 
- > **Note:** Exa's public tools (web search, code search, company research) don't require authentication. Only the corporate/enterprise Exa tools require an API key or OAuth.
+ > **Note:** Exa's default public web-search and page-fetch tools don't require authentication. Inspect the discovered inventory before trying code search, company research, or other optional capabilities; authentication and availability depend on the tool and service.
  >
- > When editing the config file directly, start a new CLI session or run `copilot mcp list` to verify the stored configuration.
+ > Load this file with `copilot --additional-mcp-config @workshop-exa-mcp.json` and inspect `/mcp` in that session. For persistent setup prefer `copilot mcp add`, which preserves unrelated entries.
 
 5. Test the Exa search tools:
  ```bash
- copilot
+ copilot --additional-mcp-config @workshop-exa-mcp.json
  ```
  ```
  Search the web for current GitHub Copilot CLI features
  ```
 
 **Expected Outcome:**
-Remote Exa MCP server configured. Copilot can perform web searches, code searches, and company research via Exa tools.
+Remote Exa MCP server configured. Copilot can perform web searches and fetch pages via the discovered Exa tools. Code search and company research require suitable exposed tools or search queries; configuration success alone does not prove those capabilities.
 
 ### Exercise 3: Add a Local MCP Server
 
@@ -259,12 +273,13 @@ Remote Exa MCP server configured. Copilot can perform web searches, code searche
 
 1. Install the MCP memory server:
  ```bash
- npm install -g @modelcontextprotocol/server-memory
+ npm install --ignore-scripts --no-save --package-lock=false @modelcontextprotocol/server-memory
  ```
 
-2. Add it to your MCP config:
+2. Create a dedicated session config; existing user entries remain untouched:
  ```bash
- cat > ~/.copilot/mcp-config.json << 'EOF'
+ test ! -e workshop-memory-mcp.json &&
+ cat > workshop-memory-mcp.json << 'EOF'
  {
  "mcpServers": {
  "exa": {
@@ -279,6 +294,9 @@ Remote Exa MCP server configured. Copilot can perform web searches, code searche
  "-y",
  "@modelcontextprotocol/server-memory"
  ],
+ "env": {
+ "MEMORY_FILE_PATH": "/workspace/workshop-memory.jsonl"
+ },
  "tools": ["*"]
  }
  }
@@ -286,30 +304,32 @@ Remote Exa MCP server configured. Copilot can perform web searches, code searche
  EOF
  ```
 
- > **Note:** Environment variables referenced in the `command`, `args`, or `cwd` fields are automatically inherited from your shell. Variables that are not referenced in those fields must still be configured in the `"env"` field.
+ Replace `/workspace` with your absolute disposable exercise directory if needed. The memory server persists its graph at `MEMORY_FILE_PATH`; keep that path stable to share memory across server restarts. Session-only **configuration** does not mean session-only **data**. Without an explicit path, the package chooses its own default storage location.
 
-3. Restart Copilot to load the new server:
+ > **Note:** Shell variables can be expanded in `command`, `args`, and `cwd`. Configure required server variables explicitly in `"env"` for reproducibility. Do not treat unreferenced variables as isolated: local server processes can inherit other shell variables. Start Copilot with a sanitized environment when isolation is required.
+
+3. Start Copilot with that file:
  ```bash
- copilot
+ copilot --additional-mcp-config @workshop-memory-mcp.json
  ```
 
-4. Verify the server is configured:
- ```bash
- copilot mcp list
+4. Verify in the same session:
+ ```text
+ /mcp
  ```
 
 5. Test the memory server:
  ```
- Remember that my favorite programming language is Rust
+ Using the memory server's create_entities tool, remember that my favorite programming language is Rust
  ```
 
 6. Later in the session:
  ```
- What's my favorite programming language?
+ Using the memory server's search_nodes tool, what's my favorite programming language?
  ```
 
 **Expected Outcome:**
-Local MCP server runs and provides additional capabilities.
+Local MCP server runs and provides additional capabilities. Verify actual create/search tool calls, then restart with the same config and confirm Rust is retrieved from the graph file rather than conversation history.
 
 ### Exercise 4: File System MCP Server
 
@@ -319,14 +339,15 @@ Local MCP server runs and provides additional capabilities.
 
 1. Install the filesystem MCP server:
  ```bash
- npm install -g @modelcontextprotocol/server-filesystem
+ npm install --ignore-scripts --no-save --package-lock=false @modelcontextprotocol/server-filesystem
  ```
 
  > **Note:** The `~/projects` directory must exist before the filesystem server can start. Create it first with `mkdir -p ~/projects` if needed.
 
-2. Update MCP config with directory restrictions:
+2. Create a separate config with directory restrictions (preserve your existing entries):
  ```bash
- cat > ~/.copilot/mcp-config.json << 'EOF'
+ test ! -e workshop-filesystem-mcp.json &&
+ cat > workshop-filesystem-mcp.json << 'EOF'
  {
  "mcpServers": {
  "exa": {
@@ -355,7 +376,7 @@ Local MCP server runs and provides additional capabilities.
 
 3. Restart Copilot:
  ```bash
- copilot
+ copilot --additional-mcp-config @workshop-filesystem-mcp.json
  ```
 
 4. Check for any MCP server errors:
@@ -380,15 +401,17 @@ MCP server provides structured file access with defined boundaries. Any startup 
 **Steps:**
 
 1. **List all servers:**
+   Register a persistent exercise server first; Exercise 3's additional configuration applies only to its own session. If `workshop-memory` already exists, inspect it rather than replacing it.
  ```bash
+ copilot mcp add workshop-memory -- npx -y @modelcontextprotocol/server-memory
  copilot mcp list
  ```
 
- > This command reports the servers you have configured — user, workspace, and plugin sources. On a clean machine it prints `No MCP servers configured.` along with `copilot mcp add` usage hints. That is expected: the built-in GitHub MCP server is not listed here. To see it, open the `/mcp` view inside a session.
+ > This reports user, workspace, plugin, and **builtin** sources, including `github-mcp-server`. Disabled servers/policy can affect status; “no servers” is not a universal clean-machine outcome.
 
 2. **Show details for a server:**
  ```bash
- copilot mcp get memory
+ copilot mcp get workshop-memory
  ```
 
 3. **Add a new local server:**
@@ -396,22 +419,25 @@ MCP server provides structured file access with defined boundaries. Any startup 
  copilot mcp add context7 -- npx -y @upstash/context7-mcp
  ```
 
-4. **Add a remote server with a header:**
+4. **Add a remote server with a header (optional; requires your own authorized Stripe token):**
  ```bash
+ : "${TOKEN:?Set TOKEN privately to an authorized Stripe token before running this optional example}"
  copilot mcp add --transport http \
    --header "Authorization: Bearer $TOKEN" \
    stripe https://mcp.stripe.com
  ```
 
-5. **Use JSON output for scripts:**
+5. **Use selected JSON fields for scripts:**
  ```bash
- copilot mcp list --json
- copilot mcp get memory --json
+ copilot mcp list --json | jq '.mcpServers | to_entries | map({name: .key, source: .value.source, type: .value.type})'
+ copilot mcp get workshop-memory --json | jq 'to_entries | map({name: .key, source: .value.source, type: .value.type}) | .[]'
  ```
 
-6. **Remove a server:**
+ > Raw MCP JSON may contain unmasked environment/header secrets. Do not print or share it, and avoid `--show-secrets` in a workshop.
+
+6. **Remove a server:** remove the disposable Context7 entry, leaving `workshop-memory` available for the interactive steps.
  ```bash
- copilot mcp remove memory
+ copilot mcp remove context7
  ```
 
 7. **Open the interactive MCP view inside a session:**
@@ -425,9 +451,9 @@ MCP server provides structured file access with defined boundaries. Any startup 
 8. **Drive the same view with subcommands:**
  ```
  /mcp list
- /mcp show memory
- /mcp disable memory
- /mcp enable memory
+ /mcp show workshop-memory
+ /mcp disable workshop-memory
+ /mcp enable workshop-memory
  /mcp reload
  ```
 
@@ -442,33 +468,36 @@ You can manage MCP servers without editing config files and inspect them interac
 
 1. Allow specific MCP server in programmatic mode:
  ```bash
- copilot -p "Check my GitHub notifications" \
- --allow-tool 'github'
+ copilot -p "Use only built-in GitHub MCP tools to check my notifications if an available tool supports them; otherwise report the missing tool. Do not use shell, web search, or other tools." \
+ --allow-tool 'github-mcp-server'
  ```
 
 2. Allow all MCP tools:
  ```bash
- copilot -p "Use memory to store my preferences" \
+ copilot -p "Using memory create_entities, store my favorite programming language as Rust" \
+ --additional-mcp-config @workshop-memory-mcp.json \
  --allow-tool 'memory'
  ```
 
 3. Deny specific MCP server while allowing others:
  ```bash
- copilot -p "Analyze the project" \
+ copilot -p "Analyze the project read-only; do not edit files, run programs, or contact services" \
  --allow-all-tools \
- --deny-tool 'github'
+ --deny-tool 'github-mcp-server'
  ```
 
 4. Combine with other tool permissions:
  ```bash
- copilot -p "Review code and check GitHub issues" \
+ copilot -p "Review code read-only and check GitHub issues if an available GitHub MCP tool supports it; otherwise report the missing tool. Do not write files or mutate external resources." \
  --allow-tool 'shell(cat)' \
- --allow-tool 'github' \
+ --allow-tool 'github-mcp-server' \
  --deny-tool 'write'
  ```
 
 **Expected Outcome:**
 MCP server tools follow the same permission model as built-in tools.
+
+Without preapproval, programmatic mode cannot answer a permission prompt: a tool may be denied even when the process exits successfully. Low-risk calls can be prompted or preapproved; destructive calls require approval or are blocked. Check the tool timeline and actual effects, not just the exit code. Keep destructive permission tests confined to disposable fixtures.
 
 ### Exercise 7: Temporary MCP Configuration
 
@@ -478,7 +507,8 @@ MCP server tools follow the same permission model as built-in tools.
 
 1. Create a temporary MCP config as JSON:
  ```bash
- cat > /tmp/temp-mcp.json << 'EOF'
+ TEMP_MCP_CONFIG=$(mktemp)
+ cat > "$TEMP_MCP_CONFIG" << 'EOF'
  {
  "mcpServers": {
  "microsoft-learn": {
@@ -494,14 +524,15 @@ MCP server tools follow the same permission model as built-in tools.
 
 2. Start Copilot with the additional config:
  ```bash
- copilot --additional-mcp-config @/tmp/temp-mcp.json
+ copilot --additional-mcp-config "@$TEMP_MCP_CONFIG"
  ```
 
 3. The temporary servers are available for this session only.
 
-4. Verify:
- ```bash
- copilot mcp list
+4. Verify in the process launched with the temporary config:
+ ```text
+ /mcp
+ /env
  ```
 
 5. The base config + temporary config are merged.
@@ -510,6 +541,8 @@ MCP server tools follow the same permission model as built-in tools.
  ```
  Search Microsoft Learn for how to create an Azure Container App with managed identity
  ```
+
+ After exiting, remove only this exercise's temporary file: `rm -- "$TEMP_MCP_CONFIG"`.
 
 **Expected Outcome:**
 Additional MCP servers can be loaded per-session without modifying base config.
@@ -570,7 +603,7 @@ MCP server names (the keys in `"mcpServers"`) support dots (`.`), slashes (`/`),
 }
 ```
 
-> **Note:** Environment variables referenced in `command`, `args`, or `cwd` are automatically inherited from your shell. Variables not referenced in those fields must still be configured explicitly in the `"env"` field. The `"tools"` field defaults to `["*"]` (all tools) if omitted. You can restrict to specific tools with a list of tool names.
+> **Note:** Shell variables can be expanded in `command`, `args`, and `cwd`. Configure required variables explicitly in `"env"` for reproducibility, but do not assume that excludes other shell variables from local child processes. Sanitize the launching environment when isolation is required. The `"tools"` field defaults to `["*"]` (all tools) if omitted. You can restrict to specific tools with a list of tool names.
 
 ### Common MCP Servers
 
@@ -579,10 +612,10 @@ MCP server names (the keys in `"mcpServers"`) support dots (`.`), slashes (`/`),
 | Memory | `@modelcontextprotocol/server-memory` | Persistent memory |
 | Filesystem | `@modelcontextprotocol/server-filesystem` | File operations |
 | GitHub | Built-in | GitHub integration |
-| Exa | `https://mcp.exa.ai/mcp` (remote) | Web search, code search, company research |
-| PostgreSQL | `@modelcontextprotocol/server-postgres` | Database queries |
-| Slack | `@modelcontextprotocol/server-slack` | Slack integration |
-| Brave Search | `@anthropic/mcp-server-brave-search` | Web search |
+| Exa | `https://mcp.exa.ai/mcp` (remote) | Web search and page fetching; inspect available tools for code search/company research |
+| PostgreSQL | **Removal candidate:** `@modelcontextprotocol/server-postgres` | Package is not supported; no workshop database fixture. Review a maintained integration before use |
+| Slack | **Removal candidate:** `@modelcontextprotocol/server-slack` | Package is not supported; choose an administrator-approved maintained integration |
+| Brave Search | **Removal candidate:** `@anthropic/mcp-server-brave-search` | Package does not exist; use the Exa remote search exercise instead |
 
 ### Slash Commands
 
@@ -602,6 +635,10 @@ MCP server names (the keys in `"mcpServers"`) support dots (`.`), slashes (`/`),
 | `/mcp auth <server-name>` | Authenticate with a remote MCP server |
 | `/mcp search [query]` | Search MCP servers from the registry |
 
+Registry search requires experimental features (`--experimental` or `/experimental on`). MCP standard features such as tools, prompts, resources, and resource templates are server-dependent: an empty list or an unsupported-method response is not evidence that every server exposes them.
+
+Server support also does not guarantee a resource/template API is exposed to the model in a Copilot session. If the session has no such API, report that limitation; use an MCP client to verify the server's actual resource list/read results instead of presenting tool calls as resource reads.
+
 ### Shell Commands
 
 | Command | Description |
@@ -612,6 +649,7 @@ MCP server names (the keys in `"mcpServers"`) support dots (`.`), slashes (`/`),
 | `copilot mcp add NAME -- COMMAND [ARGS...]` | Add a local stdio server |
 | `copilot mcp add --transport http NAME URL` | Add a remote HTTP server |
 | `copilot mcp remove NAME` | Remove a server |
+| `copilot mcp enable NAME` / `disable NAME` | Persist server activation settings |
 
 ## Summary
 
@@ -629,7 +667,7 @@ MCP server names (the keys in `"mcpServers"`) support dots (`.`), slashes (`/`),
 - ✅ Server names support npm-style identifiers with `.`, `/`, `@`
 - ✅ `--additional-mcp-config` loads temporary servers
 - ✅ MCP config loads from user, workspace, plugin, and built-in sources
-- ✅ `copilot mcp list` shows configured servers only; the built-in GitHub MCP server appears in the in-session `/mcp` view
+- ✅ `copilot mcp list` includes builtin sources; verify session-only configuration in that session
 - ✅ `copilot mcp` CLI command for managing servers from the command line
 - ✅ `/mcp` takes subcommands: `list`, `show`, `add`, `edit`, `enable`, `disable`, `delete`, `reload`, `auth`, `search`
 - ✅ Remote server auto-retry on transient network failures
@@ -642,7 +680,7 @@ MCP server names (the keys in `"mcpServers"`) support dots (`.`), slashes (`/`),
 ## References
 
 - [Adding MCP Servers for Copilot CLI - GitHub Docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers)
-- [About Model Context Protocol - GitHub Docs](https://docs.github.com/en/copilot/concepts/context/mcp)
+- [About Model Context Protocol - GitHub Docs](https://docs.github.com/en/copilot/concepts/customizations/mcp)
 - [Configuring MCP Servers - GitHub Docs](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers)
 - [GitHub MCP Registry](https://github.com/mcp)
 - [Model Context Protocol](https://modelcontextprotocol.io/)

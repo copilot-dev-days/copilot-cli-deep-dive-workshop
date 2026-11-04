@@ -61,8 +61,8 @@ style: |
 
 ## Prerequisites
 
-- **GitHub account** with active Copilot subscription
-  - Pro, Pro+, Business, or Enterprise
+- **GitHub account** with Copilot access
+  - Free, Pro, Pro+, Business, or Enterprise; plan usage limits apply
 - **Terminal access** (macOS, Linux, or Windows)
 - For npm method: **current Node.js LTS** and **npm**
 
@@ -74,9 +74,9 @@ style: |
 |--------|---------|----------|
 | **Script** | `curl -fsSL https://gh.io/copilot-install \| bash` | Quick setup |
 | npm | `npm install -g @github/copilot` | Node.js devs |
-| Homebrew | `brew install --cask copilot-cli` | macOS |
+| Homebrew | `brew install --cask copilot-cli` | macOS/Linux |
 | WinGet | `winget install GitHub.Copilot` | Windows |
-| Dev Container | Built-in | Codespaces |
+| Dev Container | Verify/install if absent | Configured containers |
 
 > 💡 Already installed? `copilot update` checks for and installs updates
 
@@ -97,7 +97,7 @@ export COPILOT_GITHUB_TOKEN="github_pat_your_token"
 copilot
 ```
 
-For containers/CI: create a **fine-grained PAT** with **"Copilot Requests"** permission — classic PATs (`ghp_`) are **not** supported
+For containers/CI: an existing authorized **gh login** can supply authentication, or use a **fine-grained PAT** with **"Copilot Requests"** permission. Classic PATs (`ghp_`) are **not** supported.
 
 ---
 
@@ -140,6 +140,8 @@ copilot completion fish > ~/.config/fish/completions/copilot.fish
 
 ## Verify Your Setup
 
+Manual mode auto-approves reads; the directory question need not prompt or use shell.
+
 ```bash
 # Check version
 copilot --version
@@ -171,6 +173,10 @@ copilot --no-auto-update       # disable for this run
 COPILOT_AUTO_UPDATE=false copilot
 ```
 
+Selected settings inspection: `copilot config --help`, `copilot config theme`.
+An unset setting prints nothing and exits with status `1`; this is not an authentication failure.
+Do not dump authentication/configuration files in a shared terminal.
+
 | Symptom | Check |
 |---------|-------|
 | `copilot` not found | npm global bin is on `PATH` |
@@ -179,7 +185,7 @@ COPILOT_AUTO_UPDATE=false copilot
 | Authentication fails | Subscription, org policy, and token type |
 | Remote browser does not open | Use `copilot login --device-code` |
 
-> Containers need a fine-grained PAT with **Copilot Requests** permission; classic PATs are unsupported. Token alternatives: `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN`.
+> Containers can use an existing authorized **gh login** or supported token. Fine-grained PATs need **Copilot Requests** permission; classic PATs are unsupported. Token variables: `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN`. Never log credentials.
 
 ---
 
@@ -189,6 +195,6 @@ Open **Module 1** in `docs/workshop/01-installation.md`
 
 1. **Exercise 1a/b/c/d** — Install via your preferred method
 2. **Exercise 2** — Authenticate with GitHub
-3. **Exercise 3** — Verify with your first prompt
+3. **Exercise 3** — Verify first prompt and inspect help/settings; prompts depend on permissions
 
 ⏱️ You have **~12 minutes**

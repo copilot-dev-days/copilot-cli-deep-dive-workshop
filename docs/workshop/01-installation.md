@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- GitHub account with active Copilot subscription (Pro, Pro+, Business, or Enterprise)
+- GitHub account with Copilot access (Free, Pro, Pro+, Business, or Enterprise)
 - Current Node.js LTS and npm (for npm method)
 - macOS, Linux, or Windows
 - Terminal access
@@ -20,6 +20,7 @@
 
 Before installing, ensure you have one of:
 
+- **Copilot Free** - Free plan, subject to its usage limits
 - **Copilot Pro** - Individual subscription
 - **Copilot Pro+** - Enhanced individual subscription
 - **Copilot Business** - Organization subscription
@@ -35,9 +36,9 @@ Copilot CLI supports multiple installation methods:
 | --- | --- | --- |
 | **Script** | `curl -fsSL https://gh.io/copilot-install \| bash` | Quick setup |
 | npm | `npm install -g @github/copilot` | Node.js developers |
-| Homebrew (cask) | `brew install --cask copilot-cli` | macOS users |
+| Homebrew | `brew install --cask copilot-cli` | macOS and Linux users |
 | WinGet | `winget install GitHub.Copilot` | Windows users |
-| Dev Container | Built-in | Codespaces users |
+| Dev Container | Check `copilot --help`; install if absent | Configured containers/Codespaces |
 
 ## Updating Copilot CLI
 
@@ -120,7 +121,7 @@ GitHub Copilot CLI <version>.
 Run 'copilot update' to check for updates.
 ```
 
-> **Note:** The version line ends with a period, and a hint line pointing at `copilot update` may follow it. The exact version number reflects whichever release you installed. The format is the same regardless of installation method.
+> **Note:** Check that the command identifies GitHub Copilot CLI; diagnostic output and hints can vary by installation.
 
 ### Exercise 1b: Install via npm option
 
@@ -167,7 +168,7 @@ Run 'copilot update' to check for updates.
 
 > **Note:** The update hint line may or may not appear; the version line is the part to check.
 
-### Exercise 1c: Install via Homebrew (macOS) option
+### Exercise 1c: Install via Homebrew (macOS or Linux) option
 
 **Goal:** Install using Homebrew package manager.
 
@@ -185,7 +186,7 @@ Run 'copilot update' to check for updates.
  brew install --cask copilot-cli
  ```
 
- > **Note:** Copilot CLI ships as a Homebrew **cask**, so it is available on macOS. The unrelated `copilot` *formula* is a different project — always install the `copilot-cli` cask.
+ > **Note:** Official installation supports Homebrew on macOS and Linux. Install `copilot-cli`, not the unrelated `copilot` package.
 
 3. Verify installation:
 
@@ -268,13 +269,19 @@ Interactive session starts with `>` prompt ready for input.
  What directory am I in?
  ```
 
-2. Copilot should use the shell tool and report your current directory.
+2. Copilot can use session information or a read tool/shell command to report your directory; tool selection is not guaranteed.
 
-3. When prompted to approve the tool, select:
+3. Reads are auto-approved in manual mode. If another request prompts, inspect its displayed rule and select:
  - **Yes** - Allow this time only
  - Or **Yes, and approve for session** - Allow for the entire session
 
-4. Type `/help` to see available commands.
+4. Type `/help` to see available commands. From a separate shell, inspect settings without dumping credential state:
+ ```bash
+ copilot config --help
+ copilot config theme
+ ```
+
+ An unset setting prints nothing and exits with status `1`; this is not an authentication failure.
 
 5. Type `/exit` or press `Ctrl+C` to exit.
 
@@ -294,7 +301,7 @@ Copilot correctly identifies your working directory and shows available commands
 | Organization policy error | Ask your admin to enable Copilot CLI policy |
 | `/logout` shows warning | When signed in via gh CLI, PAT, API key, or env var, `/logout` displays a warning explaining that the credential source must be removed separately |
 | Auto-update interfering | Disable with `--no-auto-update` or set `COPILOT_AUTO_UPDATE=false` |
-| Auth fails in Docker/container | Use fine-grained PAT auth: `export GH_TOKEN="github_pat_..."`. See [Authentication in Containers](#authentication-in-containers-and-cicd) below |
+| Auth fails in Docker/container | Check an existing authorized `gh` login, or use fine-grained PAT auth: `export GH_TOKEN="github_pat_..."`. See [Authentication in Containers](#authentication-in-containers-and-cicd) below |
 | Classic PAT rejected | Classic personal access tokens (`ghp_`) are not supported. Use a fine-grained PAT with the "Copilot Requests" permission |
 | Browser never opens on a remote host | Remote and headless environments use the device code flow. Run `copilot login --web-flow` to force the browser flow, or `copilot login --device-code` to request the device code explicitly |
 
@@ -323,6 +330,8 @@ source ~/.bashrc
 3. Check that CLI access is enabled
 
 ### Authentication in Containers and CI/CD
+
+An existing authorized GitHub CLI (`gh`) login can supply authentication in a container; a PAT is not required merely because the CLI runs in Docker. Transfer credentials only through a secure local channel, never through logs or committed files. To use a fine-grained PAT instead:
 
 1. Create a fine-grained PAT at <https://github.com/settings/personal-access-tokens/new>
 2. Under "Permissions," add **"Copilot Requests"**
@@ -353,12 +362,12 @@ This stores credentials separately from github.com, allowing you to connect to y
 ## Summary
 
 - ✅ Copilot CLI requires current Node.js LTS for npm installation
-- ✅ Multiple installation methods: script, npm, Homebrew cask (macOS), WinGet
+- ✅ Multiple installation methods: script, npm, Homebrew (macOS/Linux), WinGet
 - ✅ Authentication uses GitHub OAuth: browser flow on local desktops, device code flow in remote and headless environments
 - ✅ `copilot login --web-flow` and `copilot login --device-code` force a specific OAuth mode
 - ✅ GHEC data residency supported via `copilot login --host`
 - ✅ Organization members need admin-enabled CLI policy
-- ✅ Dev Containers and Codespaces include Copilot CLI by default
+- ✅ Check container/Codespaces setup; not every environment includes the CLI
 - ✅ Auto-updates can be disabled with `--no-auto-update`
 - ✅ Use `--version`, `copilot version`, and `/version` to inspect the installed version
 - ✅ `copilot update` takes a `stable` (default) or `prerelease` channel argument

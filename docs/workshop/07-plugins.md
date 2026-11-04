@@ -91,7 +91,7 @@ copilot plugin uninstall workiq
 ### Inspecting Resources Across Kinds
 
 Plugins are one of several kinds of configuration the CLI loads. Each kind has its own
-shell command for listing what is actually in effect, and `copilot plugins` is simply an
+shell inventory command, and `copilot plugins` is simply an
 alias for `copilot plugin`:
 
 ```bash
@@ -109,9 +109,11 @@ copilot skill list --json
 
 # Custom instruction sources a session would load
 copilot instruction list
+copilot instruction list --json
 
 # Language servers configured for this CLI
 copilot lsp list
+copilot lsp list --json
 ```
 
 Enable and disable work per kind, and each change persists to configuration:
@@ -124,13 +126,20 @@ copilot skill disable my-skill
 ```
 
 > [!NOTE]
-> MCP servers are installed from a policy-configured registry, which requires
-> authentication and interactive secret entry. Add them from the `/plugin` dashboard,
-> `/mcp`, or `copilot mcp add` rather than through the plugin commands.
+> Registry-based MCP installation uses a policy-configured registry and can require
+> authentication and interactive secret entry. Add those servers from the `/plugin`
+> dashboard, `/mcp`, or `copilot mcp add`. Manual local MCP configuration and servers
+> bundled inside plugins are separate supported paths; registry authentication is not
+> a prerequisite for the local server in Exercise 5.
 
 Inside a session, `/plugin` opens the interactive plugin dashboard and `/env` prints the
 loaded environment across every kind at once — instructions, MCP servers, skills, agents,
 hooks, plugins, LSP servers, and extensions.
+
+Shell inventories are not a substitute for session validation. A `--plugin-dir` mount can
+appear in plugin and skill listings while its MCP and LSP components are absent from
+the corresponding shell listings. Inspect the session and dispatch a component before
+concluding that it is unavailable. Installed plugins contribute to MCP and LSP shell listings.
 
 ### Plugin Sources
 
@@ -147,14 +156,18 @@ hooks, plugins, LSP servers, and extensions.
 
 ### Plugin Hooks and Environment
 
-Hook and plugin scripts receive:
+Plugin path variables depend on the component and manifest format:
 
 | Variable | Points to |
 |---|---|
-| `PLUGIN_ROOT`, `COPILOT_PLUGIN_ROOT`, `CLAUDE_PLUGIN_ROOT` | The plugin's installation directory |
-| `PLUGIN_DATA`, `COPILOT_PLUGIN_DATA`, `CLAUDE_PLUGIN_DATA` | The plugin's writable data directory |
-| `COPILOT_PROJECT_DIR`, `CLAUDE_PROJECT_DIR` | The project root |
+| `PLUGIN_ROOT`, `COPILOT_PLUGIN_ROOT`, `CLAUDE_PLUGIN_ROOT` | The loaded plugin directory; a development mount need not be installed |
+| `COPILOT_PLUGIN_DATA`, `CLAUDE_PLUGIN_DATA` | The plugin's writable data directory in hook scripts |
+| `COPILOT_PROJECT_DIR`, `CLAUDE_PROJECT_DIR` | The project root in hook scripts |
 
+Do not assume that hook variables are all present in MCP subprocesses. For the
+component-path manifest used in Exercise 5, verify data variables before use:
+the bare `PLUGIN_DATA` alias is not guaranteed. The portable manifest format has
+its own variable and fixed-path rules; do not mix the two formats.
 This lets hook scripts reference files inside the plugin package, and write state, without hardcoding paths. See [Module 9: Hooks](09-hooks.md) for hook lifecycle details.
 
 ### Post-Install Messages
@@ -197,8 +210,11 @@ Plugins can declare a post-install message in their manifest. After `copilot plu
 6. Examine a plugin's structure:
  ```bash
  ls -R plugins/
- cat plugins/workiq/README.md
+ cat plugins/spark/README.md
  ```
+
+ Catalog entries can reference other repositories. WorkIQ's source is identified in
+ `.claude-plugin/marketplace.json`; it is not a checked-in `plugins/workiq/` directory here.
 
 **Expected Outcome:**
 You understand the available plugins and their purposes.
@@ -258,7 +274,10 @@ You understand the available plugins and their purposes.
  - If you are not a tenant admin, contact your administrator (see [Admin Guide](https://github.com/microsoft/work-iq-mcp/blob/main/ADMIN-INSTRUCTIONS.md))
 
 > [!NOTE]
-> Work IQ is **not open source** — the runtime is proprietary. The GitHub repo is public for documentation, feedback, and issue tracking only.
+> Review the component's license separately: the npm runtime declares **SEE EULA**.
+> The public repository also contains MIT-licensed plugin assets and documentation;
+> it is not only an issue tracker. The hosted WorkIQ plugin can expose read **and**
+> write operations, so do not treat it as inherently read-only or equate it with the standalone npm MCP server.
 
 **Expected Outcome:**
 You understand enterprise integration capabilities.
@@ -266,6 +285,8 @@ You understand enterprise integration capabilities.
 ### Exercise 3: Install a Community MCP Server
 
 **Goal:** Install and configure an MCP server that requires no API key.
+
+> **Removal candidate (redundant exercise):** This is an MCP integration, not a plugin installation, and overlaps Module 5. Retained for comparison; use Exercise 5 for an actual plugin bundle. Merge the shown `mcpServers` entry into existing configuration, never replace the whole file.
 
 **Steps:**
 
@@ -317,14 +338,16 @@ Filesystem access capability added via MCP server — no API key required.
 
 **Goal:** Add database query capabilities.
 
+> **Removal candidate:** The PostgreSQL package below is not supported and no database fixture is supplied. This exercise is retained as an **inactive MCP design example**, not executable instructions. Do not install it or use a production database. Select a maintained administrator-approved server and disposable fixture before runtime integration.
+
 **Steps:**
 
-1. Install PostgreSQL MCP server:
- ```bash
+1. Retained unsupported installation example — **do not run**:
+ ```text
  npm install -g @modelcontextprotocol/server-postgres
  ```
 
-2. Configure with your database.
+2. Retained schema illustration — **do not apply**; connection strings in arguments can expose credentials:
 
  Add to `~/.copilot/mcp-config.json`:
  ```json
@@ -342,8 +365,8 @@ Filesystem access capability added via MCP server — no API key required.
  > [!NOTE]
  > The connection string is passed as an argument, not as an environment variable. Replace the URL with your actual database connection string.
 
-3. Test database queries:
- ```bash
+3. After a maintained integration and disposable fixture are supplied, the intended queries are:
+ ```text
  copilot
  ```
  ```
@@ -356,12 +379,12 @@ Filesystem access capability added via MCP server — no API key required.
 4. **Security Note:** Be careful with production databases!
 
 **Expected Outcome:**
-Database query capabilities via Copilot.
+You understand the intended database integration; runtime completion is blocked until a maintained server and fixture are supplied.
 
 ### Exercise 5: Create a Simple Custom Plugin
 
 > [!TIP]
-> This exercise uses the `McpServer` high-level API from `@modelcontextprotocol/sdk`. Tool input schemas use [Zod](https://zod.dev/) (bundled with the SDK). The server communicates over stdio.
+> This exercise uses the `McpServer` high-level API from `@modelcontextprotocol/sdk`. Tool input schemas use [Zod](https://zod.dev/), installed explicitly alongside the SDK. The server communicates over stdio.
 
 **Goal:** Build a basic plugin for your workflow.
 
@@ -380,7 +403,7 @@ Database query capabilities via Copilot.
 
 3. Install dependencies:
  ```bash
- npm install @modelcontextprotocol/sdk
+ npm install @modelcontextprotocol/sdk zod
  ```
 
 4. Create a simple MCP server:
@@ -421,31 +444,51 @@ Database query capabilities via Copilot.
  EOF
  ```
 
-5. Configure in Copilot.
+5. Bundle the MCP server as a real local plugin. Create `plugin.json` in this directory:
+ ```json
+ {
+   "name": "my-tools",
+   "description": "Workshop timestamp tools",
+   "mcpServers": ".mcp.json"
+ }
+ ```
 
- Add to `~/.copilot/mcp-config.json`:
+ Create `.mcp.json` **inside this plugin**, not in personal configuration:
  ```json
  {
  "mcpServers": {
  "my-tools": {
  "type": "local",
  "command": "node",
- "args": ["/home/user/copilot-plugins/my-tools/index.js"]
+ "args": ["${PLUGIN_ROOT}/index.js"]
  }
  }
  }
  ```
 
  > [!IMPORTANT]
- > Use an **absolute path** in `args` — tilde (`~`) is not expanded. Replace `/home/user` with your actual home directory (run `echo $HOME` to check).
+ > `${PLUGIN_ROOT}` resolves bundled paths in plugin configuration. The manifest uses the supported component-path format without a schema URL. The MCP-only files alone are not a plugin.
 
 6. Test your plugin:
  ```bash
- copilot
+ copilot --plugin-dir "$PWD"
  ```
  ```
  What's the current timestamp?
  ```
+ Inspect `/env` and `/mcp` to confirm that the plugin contributes the server, then
+ request an actual `get-timestamp` tool call. A fresh unattended `-p` invocation
+ without approval can deny the call; that is a permission boundary, not a loading failure.
+ For a reviewed local test, preapprove the MCP server with `--allow-tool 'my-tools'`.
+
+ Component paths in this manifest are relative to the plugin root, not the working
+ directory. Optional `agents`, `skills`, `hooks`, and `lspServers` fields point to
+ their component directories or configuration files. Copy complete skill directories,
+ including referenced resources and scripts. Dispatch plugin agents using their
+ advertised namespaced ID, such as `my-tools:reader`; verify the actual available
+ tools and any model-fallback warning rather than inferring them from frontmatter.
+ A listed LSP definition still needs a working server executable and its language
+ dependencies in the workspace; confirm a symbols or references response, not just a listing.
 
 **Expected Outcome:**
 Custom plugin provides new capabilities to Copilot.
@@ -457,6 +500,8 @@ Custom plugin provides new capabilities to Copilot.
 **Steps:**
 
 1. Review a plugin before installation:
+
+ This is a schematic review checklist: replace `@package/name` and `@package/plugin` with the actual npm components of the plugin you selected. Do not run these placeholders literally. A plugin need not use npm at all.
  ```bash
  # Check the source
  npm view @package/name repository
@@ -464,19 +509,19 @@ Custom plugin provides new capabilities to Copilot.
  # Review dependencies
  npm view @package/name dependencies
 
- # Check for known vulnerabilities
- npm audit @package/name
+ # From this exercise's Node project with its package-lock.json
+ npm audit
  ```
 
 2. Security checklist for plugins:
- - [ ] Source code is open and auditable
+ - [ ] Source code is open and auditable, or proprietary components have an approved vendor/data-handling review
  - [ ] Active maintenance and updates
  - [ ] Minimal dependencies
  - [ ] No known vulnerabilities
  - [ ] Clear permission requirements
  - [ ] Data handling documented
 
-3. Configure with least privilege:
+3. Configure a plugin's **MCP component** with least privilege; this is a schematic template, not a plugin manifest or copyable configuration. Replace its package and key placeholders, then merge entries into existing configuration:
  ```json
  {
  "mcpServers": {
@@ -498,10 +543,17 @@ Custom plugin provides new capabilities to Copilot.
  copilot
  ```
 
-5. Restrict plugin capabilities with deny rules:
+5. Restrict model tool calls with deny rules. Use the **MCP server name**, not
+ necessarily the plugin name, in the allow rule:
  ```bash
- copilot --allow-tool 'plugin-name' --deny-tool 'shell(rm)'
+ copilot --allow-tool 'my-tools' --deny-tool 'shell(rm)'
  ```
+
+ Tool approval does not grant access to every filesystem path. A reviewed skill
+ script outside the project can also need `--add-dir /absolute/path/to/plugin`.
+ Deny rules are not a sandbox for plugin startup hooks or server processes:
+ review those before loading the plugin. Test destructive requests only as blocked
+ permission checks against disposable fixtures.
 
 **Expected Outcome:**
 You can evaluate and securely configure plugins.
@@ -558,7 +610,9 @@ You can find, evaluate, and contribute to the plugin ecosystem.
  ```
  `copilot plugins` is an alias for the same command, so either spelling works.
 
- > A `[plugin-dir]` warning about a bundled plugin directory with no `plugin.json` or `SKILL.md` may print before the output. It is benign — the listing that follows is complete.
+ > A `[plugin-dir]` warning about a directory with no `plugin.json` or `SKILL.md`
+ > means that directory did not contribute a plugin. Check the named path;
+ > a successful listing does not prove that every intended component loaded.
 
 2. List the other kinds, one command each:
  ```bash
@@ -583,7 +637,7 @@ You can find, evaluate, and contribute to the plugin ecosystem.
  ```
 
  > [!NOTE]
- > The built-in server's name is `github-mcp-server`. Confirm the change through `settings.json` rather than `copilot mcp list` — built-in servers are not included in that listing.
+ > The built-in server's name is `github-mcp-server`; `copilot mcp list` includes builtin sources. Inspect selected settings or the listing without printing credential-bearing JSON.
 
 5. Install a skill into the current project rather than your user account:
  ```bash
@@ -646,7 +700,9 @@ copilot --plugin-dir ./plugin-a --plugin-dir ./plugin-b
 
 ## Plugin Configuration Reference
 
-### MCP Server Plugin Format
+### MCP Server Plugin Format (Component Configuration)
+
+This describes an MCP component referenced by `plugin.json`, not a standalone plugin manifest.
 
 ```json
 {
@@ -665,32 +721,41 @@ copilot --plugin-dir ./plugin-a --plugin-dir ./plugin-b
 }
 ```
 
-### Remote Plugin Format
+### Remote Plugin Format (MCP Component)
+
+**Removal candidate:** The original `requestInit` nesting is not the supported MCP schema. Retained inactive fragment — **do not apply**:
+```text
+"requestInit": {"headers": {"Authorization": "Bearer ${TOKEN}"}}
+```
+Use explicit transport `type` and top-level `headers` alongside `url`:
 
 ```json
 {
  "mcpServers": {
  "remote-plugin": {
+ "type": "http",
  "url": "https://plugin-server.example.com/mcp/",
- "requestInit": {
  "headers": {
  "Authorization": "Bearer ${TOKEN}"
- }
  }
  }
  }
 }
 ```
 
-### Common Plugins
+### Common Plugins (MCP Components and Alternatives)
 
 | Plugin | Package | Purpose |
 |--------|---------|---------|
 | Filesystem | `@modelcontextprotocol/server-filesystem` | File operations |
-| PostgreSQL | `@modelcontextprotocol/server-postgres` | Database queries |
+| PostgreSQL | **Removal candidate:** `@modelcontextprotocol/server-postgres` | Not supported; exercise requires a reviewed server and fixture |
 | GitHub | Built-in | GitHub integration |
 | Memory | `@modelcontextprotocol/server-memory` | Persistence |
-| Puppeteer | `@anthropic/mcp-server-puppeteer` | Browser automation |
+| Puppeteer | **Removal candidate:** `@anthropic/mcp-server-puppeteer` | Package does not exist; use supported `@playwright/mcp` instead |
+
+Supported browser component: `copilot mcp add playwright -- npx -y @playwright/mcp`. Follow [Playwright MCP setup](https://github.com/microsoft/playwright-mcp) for browser prerequisites; package availability does not prove local browser startup.
+
+Plugin settings use **maps**: `enabledPlugins` maps IDs to booleans and `extraKnownMarketplaces` maps names to source definitions. `strictKnownMarketplaces` is a managed marketplace allowlist array, not a personal boolean. Managed entries cannot be repointed or toggled locally.
 
 ## Security Best Practices
 
@@ -718,7 +783,7 @@ copilot --plugin-dir ./plugin-a --plugin-dir ./plugin-b
 - ✅ `copilot plugin update` needs a plugin name or `--all`
 - ✅ `copilot plugin list`, `copilot mcp list`, `copilot skill list`, `copilot instruction list`, and `copilot lsp list` audit each kind of configuration
 - ✅ `/plugin` opens the interactive plugin dashboard and `/env` shows every loaded kind at once
-- ✅ Plugin and hook scripts get `PLUGIN_ROOT`, `PLUGIN_DATA`, and `COPILOT_PROJECT_DIR` (plus their `COPILOT_`/`CLAUDE_` variants)
+- ✅ Plugin-root aliases resolve bundled files; data and project variables depend on component and manifest format
 - ✅ Plugins can bundle skills, agents, hooks, MCP servers, and LSP servers
 
 ## Next Steps

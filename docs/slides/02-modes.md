@@ -109,11 +109,13 @@ copilot -p "run git status" --allow-tool 'shell(git status)'
 ```
 
 ```bash
-# Pipe content in
-cat error.log | copilot -p "explain these errors"
+# Include content in the prompt
+copilot -p "explain these errors: $(cat error.log)"
 ```
 
 Perfect for: automation, CI/CD, scripting
+
+> Piped input is ignored with `-p`; quoted command substitution includes the content in the prompt.
 
 > Shell approval matches the **first-level subcommand** — `shell(git status)` allows exactly that, and `shell(git)` alone does not cover git subcommands
 > Use `shell(git:*)` for the whole family — the wildcard matches the command stem, so it covers `git push` but not `gitea`
@@ -196,19 +198,20 @@ Type **`/help`** to see them all
 |----------|--------|
 | `@` | Mention files — include as context |
 | `#` | Reference GitHub issues, PRs, discussions |
-| `!` | Run shell commands directly (only way to access shell) |
+| `!` / `$` | Direct shell command / interactive shell handoff |
 | `Shift+Tab` | Cycle between chat → plan → autopilot mode |
 | `Esc` | Cancel current operation |
-| `Double-Esc` | Clear input, or rewind the last turn |
+| `Double-Esc` | Context-dependent interrupt/recall; use `/rewind` restore picker |
 | `ctrl+t` | Toggle reasoning display |
 | `ctrl+x → /` | Quick slash command |
 | `ctrl+c` | Cancel / clear input / exit |
 | `ctrl+d` | Shutdown on empty prompt |
-| `ctrl+y` | Edit plan in terminal editor |
-| `ctrl+f` / `ctrl+b` | Page forward / back |
+| `ctrl+y` | Terminal-dependent; use plan UI's edit action |
+| `ctrl+f` | Timeline search |
+| `Page Up` / `Page Down` | Page back / forward |
 | `ctrl+g` | Open prompt in external editor |
 
-> See workshop for 18 additional shortcuts including text editing and navigation
+> Shortcuts depend on terminal/TTY. `Ctrl+O` expands recent timeline, `Ctrl+E` all; `Ctrl+Q` queues input. `Ctrl+X` then `e` opens the editor.
 
 ---
 
@@ -219,6 +222,8 @@ Type **`/help`** to see them all
 - `/share html` writes a self-contained interactive export
 - `/keep-alive on|off|busy` prevents sleep; `/memory on|off` controls recall
 - `/pr` manages the current branch pull request
+- `/rewind` picks an earlier turn: conversation only or also Copilot's files, protecting later user edits
+- `/clear` is not transcript/log/memory erasure
 
 Common aliases: `/yolo` → `/allow-all` · `/btw` → `/ask` · `/reset` → `/clear` · `/continue` → `/resume` · `/undo` → `/rewind` · `/export` → `/share` · `/caffeinate` → `/keep-alive`
 
@@ -241,19 +246,28 @@ No need to wait for the current agent turn:
 
 ## Startup Controls
 
+Session IDs below are existing IDs, not literal angle-bracket placeholders.
+
 ```bash
 copilot --mode plan                 # interactive, plan, or autopilot
 copilot --agent rubber-duck
-copilot -n "auth-fix" --session-id <id>
+copilot -n "auth-fix"               # assign a session name
+# To resume by ID: copilot --session-id "$SESSION_ID" (set an existing ID first)
 copilot -C ./service --context long_context
 copilot --effort high --max-ai-credits 30
 copilot --remote                    # web/mobile remote control
+copilot --fleet -i "Add tests for independent modules"
+copilot --trust-folder -p "Summarize this project"
 ```
 
 Also: `--plan`, `--autopilot`, `--experimental`, `--connect[=id]`, `--acp`,
 `--max-autopilot-continues`, `--enable-reasoning-summaries`
 
 `/init` bootstraps repository instructions; `/terminal-setup` configures multiline input.
+
+Substitute an existing directory for `./service`; it is not a supplied fixture.
+For piped-input examples, use your own existing `error.log`.
+The `/changelog` inventory entry is a retained scope-removal candidate, not an exercise.
 
 ---
 
@@ -277,7 +291,7 @@ copilot --agent rubber-duck
 - Design flaws
 - Missed edge cases
 
-> Built-in agents are designed for interactive sessions — pairing `--agent` with a `-p` run fails outright (custom agents do work with `-p`)
+> Use advertised slash commands here. Built-in `--agent NAME -p` support and automatic activation require authenticated runtime checks, not parser assumptions.
 
 ---
 
@@ -316,7 +330,7 @@ Run prompts later or repeatedly:
 
 ## Tool Approval
 
-When Copilot wants to run a command, you choose:
+When an unapproved request prompts, inspect its rule:
 
 | Option | Effect |
 |--------|--------|
@@ -325,7 +339,7 @@ When Copilot wants to run a command, you choose:
 | **No** | Deny and redirect |
 
 > ⚠️ Be careful with session-wide approval for `rm`, `git push`, `sudo`
-> ✅ Safe for `ls`, `cat`, `git status`, `git diff`
+> Manual reads may not prompt. Shell approvals match identifiers/families; approving `cat` does not approve `wc`. Formatters can write.
 
 ---
 
@@ -334,13 +348,13 @@ When Copilot wants to run a command, you choose:
 Switch how much the agent may do on its own:
 
 ```
-/permissions manual      # approve every request
+/permissions manual      # auto-approve reads; other requests follow rules
 /permissions assisted    # auto-approve what a safety check deems safe
 /permissions allow-all   # auto-approve tools, paths, and URLs
 /permissions show        # show current status
 ```
 
-> `assisted` needs the experimental auto-approval feature — it is ignored when that feature is off or when policy blocks auto-approval
+> Assisted approval needs no experimental opt-in; explicit disable/policy can block it. The judge is probabilistic, **not a security boundary**.
 
 Cap what a session may spend (opt-in, minimum **30** AI credits):
 
@@ -367,7 +381,7 @@ Open **Module 2** in `docs/workshop/02-modes.md`
 - **Exercise 1** — Slash commands
 - **Exercise 2** — Plan → Review → Diff
 - **Exercise 3** — Repo init & sessions
-- **Exercise 4–5** — Interactive basics & tool approval
+- **Exercise 4–5** — Interactive basics & conditional approval prompts
 - **Exercise 6–7** — Programmatic mode & chaining
 - **Exercise 8–9** — Delegate & comparing modes
 

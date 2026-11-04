@@ -75,7 +75,9 @@ style: |
 └──────────────────────────────────────┘
 ```
 
-When full → **auto-compaction** at ~95% capacity
+Background compaction starts around **80%**; near **95%** the CLI may pause to finish.
+
+Keep practice bounded; do not exhaust context to force a trigger. If it is not observed, demonstrate continuity with `/compact` instead.
 
 ---
 
@@ -103,11 +105,13 @@ Available models and context windows depend on your subscription and selected mo
 | `/context` | Show token usage | Check regularly |
 | `/usage` | Session stats (AI credits, token breakdown, duration, lines edited) | Track consumption |
 | `/compact` | Compress history | Long sessions |
-| `/clear` | Abandon session and start fresh (session is discarded) | Abandoning session entirely |
+| `/clear` | Fresh active context, not stored-data erasure | Switching tasks |
 | `/new` | Start new conversation (old session stays backgrounded) | New topic, keep old session |
 | `/cwd` | Change working directory | Switch project scope |
 | `@path/to/file` | Include file in prompt | Targeted context |
 | `#<number>` | Include issue/PR/discussion | GitHub context |
+
+Before the first message, `/context` can report that context is not yet available. Send a short message, then check again.
 
 ---
 
@@ -140,6 +144,10 @@ Show me just @src/auth/middleware.ts
 
 > Load on-demand, not all at once. Use `@path/to/file` to include specific files.
 
+Tool choice is model-dependent; inspect actual reads and `/context`, not guaranteed “all/only necessary” outcomes.
+
+Selective prompts do not guarantee lower token totals: overhead and permission retries can outweigh savings in small projects.
+
 ---
 
 ## Optimization Strategies
@@ -149,7 +157,7 @@ Show me just @src/auth/middleware.ts
 | `/clear` | Abandoning session entirely |
 | `/new` | Starting new topic but keeping old session accessible |
 | `/compact` | Long session, need to continue |
-| Explore agent | Codebase overview without cost |
+| Explore agent | Separate context reduces parent pressure; summaries/usage still count |
 | `@path/to/file` | Include specific files |
 | Batch questions | Multiple related questions |
 | Summarize → clear | Preserve knowledge, free space |
@@ -165,9 +173,20 @@ Show me just @src/auth/middleware.ts
 | `@~/home` | `@~/notes/ideas.md` | Home directory |
 | `@../parent` | `@../shared-lib/utils.js` | Parent directory |
 
-> `/add-dir` directories persist across `/clear` and `/resume`
+> `/add-dir` adds access **and trusted skills/agents**; inspect current grants with `/list-dirs`
 > `/add-dir` accepts **relative paths** like `./src`, `../sibling`
+> `@` does not grant access: approve outside-directory reads or add the specific directory. Unattended `-p` can be denied.
 > **Reasoning token usage** shown in per-model breakdown via `/usage`
+
+---
+
+## Routing and Large Output
+
+- Auto routing: advertised `efficiency`, `balance`, `intelligence` profiles via `--auto-tier`
+- `--dynamic-retrieval skills=on|off` persists skill retrieval preference
+- Large results may spill to temporary files with a preview/path
+- `COPILOT_LARGE_OUTPUT_THRESHOLD_BYTES` controls output headroom
+- `/clear` does not erase transcripts, logs, memory, or exports
 
 ---
 
@@ -186,3 +205,5 @@ Open **Module 10** in `docs/workshop/10-context.md`
 - **Exercise 7** — Context-aware workflow
 
 ⏱️ You have **~12 minutes**
+
+[Managing context — GitHub Docs](https://docs.github.com/en/copilot/concepts/prompting-and-context/context-management)

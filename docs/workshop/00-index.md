@@ -4,7 +4,7 @@ Welcome to this hands-on workshop for mastering GitHub Copilot CLI! This worksho
 
 ## Prerequisites
 
-- GitHub account with an active Copilot subscription (Pro, Pro+, Business, or Enterprise)
+- GitHub account with Copilot access (Free, Pro, Pro+, Business, or Enterprise; plan usage limits apply)
 - Current Node.js LTS and npm (for npm installation method)
 - Basic command-line experience
 - A code editor (VS Code recommended)
@@ -48,7 +48,7 @@ By the end of this workshop, you will be able to:
 | 12 | [Advanced Topics](12-advanced.md) | 30 min | Autopilot, Fleet, environment, CI/CD, LSP config, tips |
 | 13 | [Configuration & Environment](13-configuration.md) | 20 min | Config options, env vars, IDE integration, accessibility |
 
-**Total estimated time: ~4.5 hours**
+**Total estimated time: 275 minutes (~4.5 hours)**
 
 ## Workshop Flow
 
@@ -116,15 +116,15 @@ copilot --continue
 | `/model` | Switch AI model |
 | `/mcp` | Manage MCP servers |
 | `/plugin` | Manage plugins and plugin marketplaces |
-| `/init` | Initialize Copilot config for repo |
+| `/init` | Generate repository custom instructions |
 | `/instructions` | View and toggle custom instruction files |
 | `/allow-all` | Enable all permissions during the session |
 | `/permissions` | Switch between permission modes (`manual`, `assisted`, `allow-all`, `show`) |
-| `/add-dir` | Add a directory to the session access scope |
+| `/add-dir` | Add file access and load that directory's skills and agents as trusted configuration |
 | `/list-dirs` | Display all accessible directories |
 | `/cwd` | Change working directory |
 | `/research` | Deep research with exportable reports |
-| `/rewind` (alias `/undo`) | Rewind the last turn and revert file changes (also via double-Esc) |
+| `/rewind` (alias `/undo`) | Pick an earlier turn; restore conversation only or also Copilot's file changes |
 | `/copy` | Copy last response to clipboard |
 | `/ide` | Connect to IDE workspace |
 | `/lsp` | Manage language server configuration |
@@ -137,7 +137,7 @@ copilot --continue
 | `/env` | Show loaded instructions, MCP servers, skills, agents, hooks, plugins, LSPs, and extensions |
 | `/settings` | Open or edit CLI settings |
 | `/statusline` | Configure status line items |
-| `/changelog` | Display the changelog for CLI releases |
+| `/changelog` | **Removal candidate (scope only):** retained command inventory entry; not required for workshop exercises |
 | `/subagents` | Configure default and per-agent subagent models |
 | `/vim` | Toggle Vim mode for the prompt input |
 | `/collect-debug-logs` | Collect debug logs to a local `.tgz` file or a secret gist |

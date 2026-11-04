@@ -76,29 +76,29 @@ With instructions, Copilot **knows**:
 | File | Scope | Think of it as... |
 |------|-------|-------------------|
 | `AGENTS.md` | Directory tree | **"Who you are"** |
-| `CLAUDE.md` / `GEMINI.md` | Git root + cwd | **"Who you are"** (cross-tool) |
+| `CLAUDE.md` / `GEMINI.md` | Root/cwd/intermediate/relevant nested paths | Cross-tool guidance |
 | `.github/copilot-instructions.md` | Whole repo | **"How we code here"** |
 | `.github/instructions/*.instructions.md` | File patterns | **"Special rules for these files"** |
 
 ---
 
-## Instruction Priority
+## Instruction Scope and Discovery
 
-Highest wins ↓
+Applicable files combine — **no general precedence order**
 
 ```
-1. Your prompt                              ← always wins
-2. AGENTS.md (nearest in directory tree)
-   + CLAUDE.md / GEMINI.md (git root & cwd)
+1. Your prompt (task request, not file priority)
+2. AGENTS.md (standard directory discovery)
+   + CLAUDE.md / .claude/CLAUDE.md / GEMINI.md
 3. .github/copilot-instructions.md
 4. .github/instructions/**/*.instructions.md
 5. ~/.copilot/copilot-instructions.md (personal)
 6. ~/.copilot/instructions/**/*.instructions.md
 7. COPILOT_CUSTOM_INSTRUCTIONS_DIRS
-8. Default behavior                         ← fallback
+8. Built-in guidance
 ```
 
-> They **stack** — all active instructions are combined
+> Avoid conflicts. Modular repository files exclude intermediate discovery and apply by `applyTo`.
 
 ---
 
@@ -137,6 +137,10 @@ You are a senior TypeScript engineer.
 Format: `<type>(<scope>): <description>`
 Example: `feat(auth): add password reset endpoint`
 ```
+
+For Exercise 5: `feat(examples): add feature.js with hello world logging`.
+Check suggestions against the required scope; ask for corrections when needed.
+Instructions guide behavior — they do not guarantee compliance or enforce permissions.
 
 ---
 
@@ -197,8 +201,11 @@ copilot
 ```
 
 Comma-separated list of directories — useful for shared team standards kept
-outside the repository. Files found there sit at the bottom of the priority
-stack, and overlap with the project directory is deduplicated.
+outside the repository. Overlapping discovery is deduplicated; this is not a priority tier.
+
+Shell: `copilot init` generates instructions; `copilot instruction list --json` inventories sources.
+
+Custom subagents opt in with `include-custom-instructions: true`; parent-only extra directories are not inherited.
 
 ---
 
@@ -207,8 +214,8 @@ stack, and overlap with the project directory is deduplicated.
 The experimental **customize** mode can override selected sections of the
 system prompt without replacing the whole message.
 
-> Keep project guidance in instruction files. Configuration details and the
-> experimental toggle are covered in **Module 13**.
+> Keep project guidance in instruction files. **Module 13** covers the experimental
+> toggle; consult `copilot help config` for customization configuration details.
 
 ---
 
@@ -219,6 +226,8 @@ system prompt without replacing the whole message.
 - **Show examples** — code snippets of preferred patterns
 - **Use `/instructions`** — see what's active, toggle on/off
 - **Nest `AGENTS.md`** — subdirectories can have their own persona
+
+After editing instructions, restart/resume the session or use `/new` to load changes.
 
 ---
 

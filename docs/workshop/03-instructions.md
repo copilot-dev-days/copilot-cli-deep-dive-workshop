@@ -16,28 +16,32 @@
 
 ## Concepts
 
-### Instruction Hierarchy
+### Instruction Hierarchy (Scope and Discovery)
 
-Copilot CLI reads instructions from multiple sources with this priority:
+Copilot CLI combines applicable instructions; there is no general file-precedence order. The list describes sources, **not priority**:
 
 ```
-1. Prompt (highest) - What you type
-2. AGENTS.md - Nearest in directory tree (also CLAUDE.md and GEMINI.md, in git root and cwd)
+1. Prompt - Your task-specific request (not an instruction-file loading tier)
+2. AGENTS.md - Repository root, cwd, intermediate and relevant nested directories
 3. .github/copilot-instructions.md - Repository-wide
 4. .github/instructions/**/*.instructions.md - Path-specific
 5. Personal instructions - ~/.copilot/copilot-instructions.md
 6. Personal path-specific - ~/.copilot/instructions/**/*.instructions.md
 7. Additional directories - via COPILOT_CUSTOM_INSTRUCTIONS_DIRS
-8. Default behavior (lowest)
+8. Default behavior - Built-in guidance, not a file-discovery tier
 ```
+
+`CLAUDE.md` (including `.claude/CLAUDE.md`), `GEMINI.md`, and repository-wide instructions use standard root/cwd/intermediate/relevant nested discovery. Modular repository `*.instructions.md` files exclude intermediate-directory discovery and apply through `applyTo`. Avoid contradictions rather than relying on a priority ladder; inspect loaded sources with `/instructions`.
+
+Custom agents spawned as subagents do **not** automatically receive repository instructions. Set `include-custom-instructions: true` on specialists that need them (Module 8). `--no-custom-instructions` still wins; extra instruction directories supplied only to the parent are not inherited.
 
 ### File Purposes
 
 | File | Scope | Purpose |
 | --- | --- | --- |
 | `AGENTS.md` | Directory tree | Agent persona and behavior |
-| `CLAUDE.md` | Git root and cwd | Agent persona and behavior (cross-tool) |
-| `GEMINI.md` | Git root and cwd | Agent persona and behavior (cross-tool) |
+| `CLAUDE.md` / `.claude/CLAUDE.md` | Standard directory discovery | Agent persona and behavior (cross-tool) |
+| `GEMINI.md` | Standard directory discovery | Agent persona and behavior (cross-tool) |
 | `copilot-instructions.md` | Repository | Coding standards and conventions |
 | `*.instructions.md` | File patterns | Language/path-specific rules |
 
@@ -57,6 +61,11 @@ This displays all discovered instruction files (AGENTS.md, CLAUDE.md, GEMINI.md,
 | Toggle a file on/off | Select from the displayed list |
 
 This is especially helpful when multiple instruction files interact and you need to isolate which one is causing unexpected behavior.
+
+After editing instruction files, restart or resume the session, or use `/new`, to load the
+changes. An already-running session does not automatically pick them up.
+
+From the shell, `copilot instruction list --json` inventories discovered sources; plugin instruction state in that listing uses global settings and may differ from a live session's trusted repository/managed overlays. `copilot init` generates repository instructions non-interactively; review generated files before accepting them.
 
 ### Instruction File Consolidation
 
@@ -433,7 +442,7 @@ The database directory uses specialized database agent behavior.
 
 4. Copilot should suggest conventional format:
    ```
-   feat: add feature.js with hello world logging
+   feat(examples): add feature.js with hello world logging
    ```
 
 5. Test with a bug fix scenario:
@@ -448,6 +457,10 @@ The database directory uses specialized database agent behavior.
 
 **Expected Outcome:**
 Commit messages follow Conventional Commits format.
+
+The `AGENTS.md` example requires a scope. Check suggestions against its exact format and ask
+Copilot to correct any mismatch. Custom instructions guide behavior; they do not enforce tool
+permissions or guarantee that every suggestion complies.
 
 ## Best Practices
 
@@ -485,7 +498,7 @@ Commit messages follow Conventional Commits format.
 
 - ✅ `copilot-instructions.md` sets repository-wide standards
 - ✅ `AGENTS.md` defines agent persona and boundaries
-- ✅ `CLAUDE.md` and `GEMINI.md` are also read from the git root and cwd
+- ✅ `CLAUDE.md`, `.claude/CLAUDE.md`, and `GEMINI.md` use standard directory discovery; applicable files combine without general precedence
 - ✅ Personal instructions live at `~/.copilot/copilot-instructions.md` and `~/.copilot/instructions/**/*.instructions.md`
 - ✅ Path-specific instructions target file types with `applyTo`
 - ✅ Nested AGENTS.md files enable directory-specific behavior
@@ -502,6 +515,7 @@ Commit messages follow Conventional Commits format.
 
 ## References
 
+- [Custom Instructions for Copilot CLI - GitHub Docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions)
 - [Custom Instructions - GitHub Docs](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions)
 - [How to Write Great AGENTS.md](https://github.blog/ai-and-ml/github-copilot/how-to-write-a-great-agents-md-lessons-from-over-2500-repositories/)
 - [llms.txt Specification](https://github.com/AnswerDotAI/llms-txt)

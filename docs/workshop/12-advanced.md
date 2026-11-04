@@ -18,6 +18,8 @@
 
 ### Configuration Hierarchy
 
+The diagram is a schematic of inputs, **not a universal precedence order**: `COPILOT_HOME` selects storage, individual keys have their own override rules, and managed policy can constrain overrides. See Module 13 and installed configuration help.
+
 ```
 Environment Variables
  ↓
@@ -66,7 +68,7 @@ The `/pr` command can also automatically fix CI failures, address review feedbac
 
 The `write_agent` tool enables multi-turn conversations with background agents — send follow-up messages to agents spawned via the task tool.
 
-Sub-agents launched by the task tool are assigned **human-readable IDs** based on their name (e.g., `math-helper-0`).
+Sub-agents launched by the task tool have human-readable names in the timeline. Protocol/task IDs can still be UUIDs; use the actual `agent_id` returned by the tool for follow-ups rather than guessing an ID from the name.
 
 The `read_agent` output includes inbound messages that triggered each turn in multi-turn agents.
 
@@ -76,7 +78,7 @@ The `read_agent` output includes inbound messages that triggered each turn in mu
 
 #### Monorepo Support
 
-Custom instructions, MCP servers, skills, and agents are discovered at every directory level from the working directory up to the git root, enabling full monorepo support.
+Discovery supports monorepos, with resource-specific rules: project agents/MCP walk cwd to git root; instruction discovery also includes relevant nested paths, while modular instructions exclude intermediate directories. Inspect `/env` instead of assuming every resource uses identical discovery.
 
 #### `--effort` Shorthand
 
@@ -111,6 +113,8 @@ Use the `--remote` flag or `/remote` command to start a remote control session:
 >
 > Remote control allows another Copilot CLI instance to connect and observe or control your session — useful for pair programming, teaching, and debugging.
 
+Read-only account history uses `--sync-session=on|off`; it does **not** enable incoming control. Stop live remote access with `/remote off`. Optional `--host-environment NAME` and `--host-compute-id ID` relate to headless hosted execution, not local history export; provisioning/account behavior needs a targeted check.
+
 #### ACP Clients Provide MCP Servers
 
 > ACP (Agent Client Protocol) clients can provide MCP servers when starting or loading sessions. This enables IDE integrations to inject MCP server configurations into CLI sessions dynamically.
@@ -144,6 +148,8 @@ Use the `--remote` flag or `/remote` command to start a remote control session:
 > ```
 >
 > Run `copilot help providers` for full BYOK documentation including Azure, Anthropic, and OpenAI-compatible providers.
+
+`COPILOT_PROVIDER_API_KEY_COMMAND` runs a trusted command to obtain a fresh key per request; do not log its output. `COPILOT_PROVIDER_VISION=true` opts into image input only for a capable model. The optional `providers.json` named registry takes precedence when populated and stores credential strings in plain text; validate the provider schema and connection before relying on it.
 
 #### Offline Mode
 
@@ -189,10 +195,15 @@ Use the `--remote` flag or `/remote` command to start a remote control session:
 
 ## Hands-On Exercises
 
+Absolute paths such as `/custom/path` and `/new/path` are schematic: substitute existing, writable directories you control. Review added roots before trusting their configuration.
+
+> [!WARNING]
+> For local-only workshop validation, append `--sync-session=off` to **every** session launch below, including interactive, resumed, fleet, autopilot, and ACP launches. Session history sync is enabled by default; disabling live remote control is not the same as disabling history sync. Do not run remote/Gist examples or `/chronicle reindex` in a no-upload exercise. Use disposable fixtures, a 60–90 second external timeout, and bounded autopilot continuations; never run the broad refactoring examples against an unspecified repository.
+
 ### Exercise 1: Environment Variables
 
 > [!IMPORTANT]
-> Use `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN` (in order of precedence) as the authentication token. These take precedence over previously stored credentials.
+> Authentication normally checks `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, then `GITHUB_TOKEN` ahead of stored accounts. Codespaces' auto-injected `GITHUB_TOKEN` does not override a `/login` account; explicitly exported tokens still do. Never print token values.
 
 **Goal:** Configure Copilot CLI behavior via environment.
 
@@ -230,7 +241,7 @@ Use the `--remote` flag or `/remote` command to start a remote control session:
  copilot --help | head -50
  ```
 
- > **Note:** `copilot --help` shows comprehensive output with descriptions, examples, and sorted flags.
+ > **Note:** `copilot --help` shows descriptions and examples; the workshop contains selected flags, not a guaranteed exhaustive/sorted reference.
 
 **Expected Outcome:**
 Environment variables customize Copilot behavior.
@@ -253,10 +264,17 @@ Environment variables customize Copilot behavior.
 
  jobs:
    review:
+     # Never expose a privileged token to arbitrary fork code/configuration.
+     if: github.event.pull_request.head.repo.full_name == github.repository
      runs-on: ubuntu-latest
+     permissions:
+       contents: read
      steps:
        - name: Checkout repository
-         run: git checkout "$GITHUB_SHA"
+         uses: actions/checkout@main
+         with:
+           ref: ${{ github.event.pull_request.head.sha }}
+           fetch-depth: 0
 
        - name: Install Copilot CLI
          run: npm install -g @github/copilot
@@ -264,13 +282,21 @@ Environment variables customize Copilot behavior.
        - name: Run Code Review
          env:
            COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
+           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+           COPILOT_ALLOW_ALL: "false"
          run: |
-           copilot -p "Review the changes in this PR and provide feedback" \
-             --allow-tool 'shell(git:*)' \
+           git diff "$BASE_SHA" HEAD | \
+           copilot -p "Review this supplied PR diff against its base; report findings only" \
+             --available-tools 'view,grep,glob' \
+             --deny-tool 'shell' \
              --deny-tool 'write' \
+             --no-custom-instructions \
+             --disable-builtin-mcps \
              --usage-output-file ./copilot-usage.json \
              --silent
  ```
+
+ > Review and pin third-party Actions to an approved immutable commit in your own workflow. The checkout retrieves the actual PR head; `BASE_SHA` names that PR's base commit, not a guessed default branch. Restrict this exercise to trusted code, configuration, and token scope. Denying `write` alone would not prevent shell writes; here agent shell tools are excluded. The CLI itself still writes session/usage files.
 
  > [!NOTE]
  > Shell approval matches on a first-level subcommand, such as `git push` or `gh pr create`, so `shell(git)` on its own does not cover them. Use `shell(git:*)` to match every git command. The wildcard matches on the command stem, so `shell(git:*)` matches `git push` but not `gitea`.
@@ -318,19 +344,21 @@ Environment variables customize Copilot behavior.
  ```bash
  copilot -p "Your prompt" \
  --allow-tool 'shell(npm test)' \
- --allow-tool 'shell(npm run lint)' \
+ --allow-tool 'shell(npm run:*)' \
  --deny-tool 'shell(rm)' \
  --deny-tool 'shell(git push)' \
  --deny-tool 'write' \
  --silent
  ```
 
+ `shell(npm run:*)` approves **all** `npm run` scripts, not just lint. Review the disposable project's scripts first; this command-stem rule avoids relying on unsupported deeper-subcommand matching.
+
 **Expected Outcome:**
 Copilot CLI integrated into automated workflows.
 
 ### Exercise 3: Advanced Command-Line Flags
 
-**Goal:** Master all available flags.
+**Goal:** Practice selected advanced flags and discover others through installed help.
 
 **Steps:**
 
@@ -400,13 +428,13 @@ Copilot CLI integrated into automated workflows.
  copilot --acp
  ```
 
-6. **View all flags:**
+6. **Inspect installed flag help:**
 
  ```bash
  copilot --help
  ```
 
- > **Note:** `copilot --help` provides comprehensive output with descriptions, usage examples, and sorted flags.
+ > **Note:** `copilot --help` is the installed command reference; this exercise covers selected controls.
 
 **Expected Outcome:**
 Full command-line control over Copilot behavior.
@@ -419,7 +447,7 @@ Full command-line control over Copilot behavior.
 
 1. **What is Autopilot mode?**
 
- Autopilot mode allows Copilot to work autonomously through complex, multi-step tasks without requiring approval for each step. The agent:
+ Autopilot encourages continuation through multi-step tasks, but **does not itself grant every permission**. Requests still follow effective permissions; pre-authorize only intended operations. The agent:
  - Plans the full task execution path
  - Executes multiple steps sequentially
  - Handles errors and retries automatically
@@ -445,6 +473,10 @@ Full command-line control over Copilot behavior.
  # Start Copilot in autopilot mode
  copilot --autopilot
 
+ # Plan and then implement autonomously within a bounded continuation count
+ copilot --plan --mode autopilot --max-autopilot-continues 3 \
+   -p "Plan and implement a focused test improvement" --allow-tool 'write'
+
  # Or use Shift+Tab to cycle modes in an active session
  # (chat → plan → autopilot)
  ```
@@ -452,6 +484,8 @@ Full command-line control over Copilot behavior.
  > **Permission elevation:** When accepting a plan with autopilot, Copilot shows a permission elevation dialog to prevent auto-denied tool errors during autonomous execution.
 
  > **Plan approval menu:** Plan approval shows model-curated actions with a recommended option highlighted, including an **autopilot+fleet** option for parallelizable work.
+
+ > Fleet can start directly with `copilot --fleet -i "Add tests for independent modules"` (also `-p` or piped stdin). Set scope/permissions and inspect `/tasks`; concurrency and continuation limits do not bound every side effect or guarantee completion. Repository-aware custom subagents need `include-custom-instructions: true`; model preferences/policies and Auto routing affect their dispatched model (Module 8).
 
 4. **Example: Set up a new Express.js API:**
 
@@ -482,7 +516,7 @@ Full command-line control over Copilot behavior.
  Use `Shift+Tab` to cycle back to chat or plan mode, or press `Esc` to interrupt the current autonomous operation.
 
  ```
- # Now you'll be prompted for approval on each action
+ # Manual reads remain auto-approved; other requests follow effective rules/grants
  ```
 
 7. **Limit autopilot continuation rounds:**
@@ -637,7 +671,8 @@ Complex tasks are completed faster through parallel sub-agent execution with qua
  The `--bash-env` flag sources your BASH_ENV file in Copilot's shell sessions:
 
  ```bash
- # Create a custom BASH_ENV file
+ # Create only if absent; otherwise review and merge in your editor
+ test ! -e "$HOME/.copilot_env" &&
  cat > ~/.copilot_env << 'EOF'
  # Custom environment for Copilot sessions
  export PROJECT_ROOT=/workspace/myproject
@@ -683,7 +718,7 @@ Complex tasks are completed faster through parallel sub-agent execution with qua
 
 4. **Shell mode access:**
 
- > **Important**: Shift+Tab cycles chat → plan → autopilot. Shell mode is entered with `!`.
+ > **Important**: Shift+Tab cycles chat → plan → autopilot. `!` runs direct commands; `$` hands off to an interactive shell. Keyboard behavior depends on terminal/TTY and policy.
 
  **Shell mode is not part of the Shift+Tab cycle.** Instead:
 
@@ -696,6 +731,7 @@ Complex tasks are completed faster through parallel sub-agent execution with qua
  ```
  Shift+Tab: cycle through (chat) → (plan) → (autopilot)
  ! (exclamation): direct access to shell mode
+ $ (dollar): interactive shell handoff (when enabled)
  ```
 
  **To enter shell mode:**
@@ -716,11 +752,13 @@ Complex tasks are completed faster through parallel sub-agent execution with qua
 
  ```bash
  # Set up environment
- export BASH_ENV=~/.copilot_project_env
+ export BASH_ENV=~/.copilot_env
  copilot --bash-env
  ```
 
  Inside the session, use shell mode to confirm the environment is available:
+
+ > Validate this separately from model-invoked shell tools: the direct `!` shell path may use `/bin/sh` and may not source `BASH_ENV` even with `--bash-env`. If the marker is missing, explicitly use Bash and source your reviewed environment file (for example, `! bash -c '. ~/.copilot_env; echo "$PROJECT_ROOT"'`). Bash-specific function names in the sample are not portable to `/bin/sh`. Do not invoke the commit helper during validation.
 
  ```
  ! echo $PROJECT_ROOT
@@ -758,7 +796,7 @@ Shell sessions have consistent environment configuration, and you understand how
  # Python
  npm install -g pyright
 
- # Ruby
+ # Ruby (optional: requires Ruby and RubyGems installed separately)
  gem install ruby-lsp
  ```
 
@@ -771,8 +809,11 @@ Shell sessions have consistent environment configuration, and you understand how
  | `~/.copilot/lsp-config.json` | Personal — applies to all your projects |
  | `.github/lsp.json` | Project — checked in, applies to everyone on the repo |
 
+ Write the sample to a new exercise file, then merge its server entries into existing strict-JSON LSP configuration. Review same-name collisions before merging; do not overwrite unrelated servers.
+
  ```bash
- cat > ~/.copilot/lsp-config.json << 'EOF'
+ test ! -e workshop-lsp.json &&
+ cat > workshop-lsp.json << 'EOF'
  {
    "lspServers": {
      "typescript": {
@@ -796,9 +837,26 @@ Shell sessions have consistent environment configuration, and you understand how
    }
  }
  EOF
+
+ (
+   set -e
+   umask 077
+   CONFIG_HOME="${COPILOT_HOME:-$HOME/.copilot}"
+   mkdir -p "$CONFIG_HOME"
+   LSP_CONFIG="$CONFIG_HOME/lsp-config.json"
+   MERGED=$(mktemp "$CONFIG_HOME/lsp-merge.XXXXXX")
+   trap 'rm -f -- "$MERGED"' EXIT
+   if [ -f "$LSP_CONFIG" ]; then
+     jq -s '.[0] * .[1]' "$LSP_CONFIG" workshop-lsp.json > "$MERGED"
+   else
+     jq . workshop-lsp.json > "$MERGED"
+   fi
+   jq -e 'type == "object" and (.lspServers | type == "object")' "$MERGED"
+   mv -- "$MERGED" "$LSP_CONFIG"
+ )
  ```
 
- Each server name must be unique and contain only alphanumeric characters, underscores, and hyphens.
+ Each server name must be unique and contain only alphanumeric characters, underscores, and hyphens. Review same-name entries before merging: the exercise definition wins. A parse/validation failure aborts the subshell without replacing existing configuration.
 
 4. **Server definition fields:**
 
@@ -866,7 +924,8 @@ Shell sessions have consistent environment configuration, and you understand how
 
  ```bash
  # Validate the file is well-formed JSON
- cat ~/.copilot/lsp-config.json | jq .
+ jq empty "${COPILOT_HOME:-$HOME/.copilot}/lsp-config.json"
+ copilot lsp list --json
 
  copilot
  ```
@@ -877,6 +936,8 @@ Shell sessions have consistent environment configuration, and you understand how
  ```
 
  `/lsp show` prints the resolved user config path along with each configured server and its file extensions.
+
+ A startup check is not sufficient proof of code intelligence. Verify an actual LSP definition/reference request. If `/lsp test` reports an immediate exit while `/lsp logs` shows ready, retain both results and investigate the diagnostic discrepancy rather than treating the test as passed.
 
 8. **Troubleshoot startup problems:**
 
@@ -900,10 +961,11 @@ Language servers are configured and verified with `/lsp test`, and you can tune 
 
 **Steps:**
 
-1. View your current user settings:
+1. Inspect selected user settings (settings can contain sensitive hook/proxy values):
 
  ```bash
- cat ~/.copilot/settings.json | jq .
+ copilot config theme
+ copilot config model
  ```
 
 2. Example settings file:
@@ -936,9 +998,9 @@ Language servers are configured and verified with `/lsp test`, and you can tune 
 
  `/settings` writes to `settings.json`. Run `/settings` with no arguments to open the settings dialog, and `/settings unset <key>` to remove a key.
 
-4. Grant a folder read/execute permission:
+4. Admit configuration and understand directory access:
 
- Trusted folders are recorded in the machine-managed `config.json` when you approve a folder at startup. Approve the prompt when Copilot CLI asks about a new directory, or widen access for a session with `--add-dir`:
+ Saved trust is recorded when you choose to remember startup admission. `--add-dir` adds file access **and trusts that root's skills/agents**, not merely file access. Review it before adding:
 
  ```bash
  copilot --add-dir /new/path
@@ -1040,7 +1102,7 @@ Custom user settings for your workflow in `settings.json`, plus the LSP configur
  npx @modelcontextprotocol/server-memory
 
  # Check config syntax
- cat ~/.copilot/mcp-config.json | jq .
+ jq empty "${COPILOT_HOME:-$HOME/.copilot}/mcp-config.json"
  ```
 
 7. **Use `/diagnose` for quick troubleshooting:**
@@ -1107,25 +1169,27 @@ You can diagnose and resolve common problems using `/diagnose`, LSP timeout tuni
  - Always use `--deny-tool 'shell(git push)'` in automation
  ```
 
-3. **Share MCP configurations:**
+3. **Share MCP configurations:** Use `mcpServers`, explicit transport `type`, and top-level headers. This endpoint is a placeholder for your administrator's real service; do not assume it connects:
 
  ```bash
  # Create a shared MCP config
+ test ! -e shared-mcp-config.json &&
  cat > shared-mcp-config.json << 'EOF'
  {
- "servers": {
+ "mcpServers": {
  "team-tools": {
+ "type": "http",
  "url": "https://team-mcp.example.com/",
- "requestInit": {
  "headers": {
  "Authorization": "Bearer ${TEAM_MCP_TOKEN}"
  }
  }
  }
  }
- }
  EOF
  ```
+
+ **Removal candidate — original unsupported schema, do not apply:** `"servers": {"team-tools": {"requestInit": {"headers": {"Authorization": "Bearer ${TEAM_MCP_TOKEN}"}}}}`. Retained for identification; use the supported schema above and do not commit real credentials.
 
 4. **Establish review checklist:**
 
@@ -1149,12 +1213,14 @@ Team-wide standardization on Copilot usage, including shared LSP and environment
 1. **Optimize startup time:**
 
  ```bash
- # Pre-authenticate
+ # Check that the executable is available; this does not authenticate
  copilot --version
 
- # Use --silent for faster scripted operations
+ # Use --silent to suppress progress/statistics, not to change model latency
  copilot -p "quick task" --silent
  ```
+
+ Authenticate with `/login` in an interactive session before scripted model requests, or use your environment's approved authentication method.
 
 2. **Reduce network round-trips:**
 
@@ -1179,7 +1245,7 @@ Team-wide standardization on Copilot usage, including shared LSP and environment
 4. **Efficient context management:**
 
  ```bash
- # Use the Explore agent for overview without context cost
+ # Explore reduces parent-context pressure; returned summaries still cost context/usage
  # Use @path/to/file to include specific files in prompts
  # Use targeted reads instead of reading all files
  # Compact proactively, not reactively
@@ -1208,6 +1274,8 @@ Team-wide standardization on Copilot usage, including shared LSP and environment
  Multiple agents work in parallel.
 
 7. **Parallel sessions for independent tasks:**
+
+ These commands assume your own project has `frontend`, `backend`, and `docs` directories. Substitute existing directories; do not run the examples against an unspecified layout.
 
  ```bash
  # Terminal 1: Frontend work
@@ -1251,20 +1319,23 @@ Maximum performance from Copilot CLI using parallelization, autopilot, and fleet
 
  ```
  # After /research completes, export the report
- /share ./research-report.md
+ /share file research ./research-report.md
  ```
 
 3. **Combine with tool restrictions:**
 
  ```bash
- copilot --allow-tool 'web_fetch' --deny-tool 'write'
+ copilot --available-tools 'web_fetch,web_search,view,grep,glob' \
+   --allow-url github.com --deny-tool 'shell' --deny-tool 'write'
  ```
 
  ```
  /research "What are current best practices for Node.js error handling?"
  ```
 
- Read-only research — Copilot can fetch web content but won't modify files.
+ Restricted research: no agent shell or write tools are exposed. `write` denial alone would not prevent shell writes. URL permissions/policy still apply, and the CLI itself can persist transcripts or exports.
+
+ Report generation can require the agent's `create` tool, including for files under session storage. With this read/search-only tool list, findings can appear in chat while saving the research report fails; this is not a successful report/export exercise.
 
 4. **Session insights with `/chronicle`:**
 
@@ -1299,14 +1370,16 @@ Maximum performance from Copilot CLI using parallelization, autopilot, and fleet
  - **`tips`** — Personalized tips based on your usage patterns
  - **`cost-tips`** — Personalized tips to reduce token usage and cost
  - **`improve`** — Suggest improvements to `copilot-instructions.md`
- - **`reindex`** — Reload data into the session store index
+ - **`reindex`** — Rebuild the local session store and sync session data to your account; do not run in a no-upload exercise
+
+ A search that returns no rows does not prove retrieval succeeded, even when a local transcript contains the keyword. Keep sync disabled when required and record retrieval as unverified; do not enable sync or run `reindex` just to make the exercise pass.
 
 **Expected Outcome:**
 You can run deep-research workflows and extract insights from your session history.
 
 ## Configuration Reference
 
-> 💡 For a comprehensive configuration reference including all config options, environment variables, and CLI flags, see [Module 13: Configuration & Environment](13-configuration.md).
+> 💡 For selected configuration options, environment variables, and CLI flags, see [Module 13: Configuration & Environment](13-configuration.md); consult installed help for the full reference.
 
 ### Configuration Files
 
@@ -1341,9 +1414,10 @@ You can run deep-research workflows and extract insights from your session histo
 | `--additional-mcp-config` | Add MCP config as inline JSON or an `@`-prefixed file path |
 | `--max-ai-credits` | Set a session AI credit limit |
 | `--session-id` | Resume an existing session/task by ID or set a new session UUID |
-| `--remote-export` | Export a read-only session to GitHub web and mobile |
-| `--no-remote` | Disable remote control |
-| `--no-remote-export` | Disable remote export |
+| `--remote-export` | **Removal candidate:** rejected; use `--sync-session=on` for read-only history |
+| `--no-remote` | **Removal candidate:** rejected; use `/remote off` for live control |
+| `--no-remote-export` | Accepted but unlisted; runtime semantics unverified. Prefer documented sync control |
+| `--sync-session[=on\|off]` | Read-only account-history sync for this run; no incoming control |
 | `--enable-memory` | Enable memory in prompt mode |
 | `--allow-all-mcp-server-instructions` | Include initialization instructions from all MCP servers |
 | `--no-bash-env` | Disable BASH_ENV support |
@@ -1357,7 +1431,7 @@ You can run deep-research workflows and extract insights from your session histo
 | `--mouse [on\|off]` | Enable or disable mouse support in alt screen mode |
 | `--no-mouse` | Disable mouse support in alt screen mode |
 | `--effort` | Shorthand for `--reasoning-effort` |
-| `--secret-env-vars` | Redact env var values |
+| `--secret-env-vars` | Strip named shell/MCP environment variables and mask some outputs; other tool-result routes can still leak secrets to model/history |
 | `--no-custom-instructions` | Disable AGENTS.md loading |
 | `--screen-reader` | Screen reader optimizations |
 | `--no-color` | Disable color output |
@@ -1381,7 +1455,7 @@ You can run deep-research workflows and extract insights from your session histo
 | `/every` | Schedule a recurring prompt or skill |
 | `/limits` | View or edit session limits |
 | `/lsp` | Manage language server configuration |
-| `/sandbox` | Show or configure command sandboxing (experimental) |
+| `/sandbox` | Enable/configure command sandboxing; no experimental prerequisite, host/policy restrictions apply |
 | `/settings` | Open the settings UI, or show, set, and unset individual settings |
 | `/statusline` | Configure status line items |
 | `/subagents` | Configure default and per-agent subagent models |
@@ -1389,7 +1463,7 @@ You can run deep-research workflows and extract insights from your session histo
 | `/research` | Launch deep-research workflow with exportable reports |
 | `/chronicle` | Session-history insights (standup, search, tips, cost-tips, improve, reindex) — experimental |
 | `/diagnose` | Show diagnostic summary of session and environment |
-| `/rewind` (alias `/undo`) | Rewind the last turn and revert file changes; also via double-Esc |
+| `/rewind` (alias `/undo`) | Pick an earlier turn and restore conversation only or also Copilot's files; protects subsequent user edits |
 | `/copy` | Copy last response to clipboard |
 | `/ide` | Connect to IDE workspace |
 | `/mcp` | Manage MCP servers |
@@ -1401,6 +1475,7 @@ You can run deep-research workflows and extract insights from your session histo
 | Method | Description |
 | -------- | ------------- |
 | `!` | Direct access to shell mode |
+| `$` | Interactive shell handoff, subject to terminal/policy support |
 | `Shift+Tab` | Cycle (chat) → (plan) → (autopilot) |
 
 ### Useful Aliases
@@ -1411,10 +1486,10 @@ You can run deep-research workflows and extract insights from your session histo
 # Quick Copilot start
 alias cop='copilot'
 
-# Read-only analysis
-alias cop-analyze='copilot --deny-tool write'
+# Read/search analysis: exclude shell as well as direct write tools
+alias cop-analyze='copilot --available-tools "view,grep,glob" --deny-tool shell --deny-tool write'
 
-# Safe automation mode
+# Restricted automation guidance, not enforced filesystem read-only access
 alias cop-safe='copilot --allow-tool "shell(cat)" --allow-tool "shell(grep)" --deny-tool write'
 
 # Full autonomy (careful!)
@@ -1436,13 +1511,13 @@ alias cop-resume='copilot --continue'
 - ✅ **Configurable status line** displays dynamic session info via custom shell scripts
 - ✅ **Environment loading indicator** shows skills, MCPs, and plugins being loaded at startup
 - ✅ **Status line responsive layout** auto-switches to two-line layout on narrow terminals
-- ✅ **`--help` output** includes descriptions, examples, and sorted flags
+- ✅ **`--help` output** is the installed command reference; workshop tables are selected examples
 - ✅ **`/research` command** for deep-research workflows with exportable reports
 - ✅ **Parallel tool execution** is always enabled
 - ✅ **`/chronicle` command** (experimental) for session-history insights: standup, search, tips, cost-tips, improve, reindex
 - ✅ **`--mouse [on|off]` and `--no-mouse` flags** control mouse support in alt screen mode
 - ✅ **`--effort` flag** shorthand for `--reasoning-effort`
-- ✅ **Monorepo support** discovers instructions, MCPs, skills, and agents from cwd to git root
+- ✅ **Monorepo discovery** is resource-specific; inspect `/env` and applicable instruction scopes
 - ✅ **`/diagnose` command** for troubleshooting session and environment issues
 - ✅ **`--max-autopilot-continues`** limits autopilot continuation rounds (default: 5)
 - ✅ **`--no-ask-user`** enables fully autonomous operation without questions
@@ -1462,6 +1537,12 @@ alias cop-resume='copilot --continue'
 - ✅ `config.json` is machine-managed and holds credentials — never print or share it
 - ✅ Team standardization ensures consistency
 - ✅ Performance optimization maximizes productivity
+
+### Sandbox and Automation Safety
+
+`--sandbox` and `/sandbox enable` need no experimental opt-in. Linux needs `bwrap`, usable user/network namespaces, `slirp4netns`, `unshare`/`nsenter`, iptables/ip6tables restore helpers, and `/dev/net/tun`; Docker alone is not proof of support. OS backends constrain shell processes; direct file tools follow policy best-effort, not OS containment. Credential masking substitutes approved-host HTTPS headers, not arbitrary secrets; bypass skips masking. Inspect `copilot sandbox ca --help` before changing CA trust.
+
+`--trust-folder` admits cwd configuration for one new prompt-mode run without saved trust or tool/path/URL approvals. Exact `COPILOT_ALLOW_ALL=true` additionally trusts cwd and can execute loaded hooks; other truthy values only auto-approve tools. Avoid all-permission automation on untrusted content, even in containers with host mounts/tokens.
 
 ## Next Steps
 
