@@ -99,7 +99,7 @@ Slash commands are prefixed with `/` and provide quick access to CLI features wi
 | **Context** | `/context`, `/compact` | Monitor and optimize token usage |
 | **Quick** | `/ask`, `/refine` | Ask a quick question or clean up a rough prompt |
 | **Environment** | `/env` | Show loaded environment details (instructions, MCP servers, skills, agents, hooks, plugins, LSPs, extensions) |
-| **Tools** | `/permissions`, `/allow-all`, `/reset-allowed-tools` | Manage tool permissions at runtime |
+| **Tools** | `/permissions`, `/allow-all`, `/reset-allowed-tools` | Manage permissions; reset also clears exact-path and saved location approvals and disables allow-all |
 | **Review** | `/diff`, `/review`, `/rubber-duck`, `/security-review`, `/plan`, `/research`, `/rewind` | Code review, critique, planning, history navigation |
 | **Configuration** | `/model`, `/mcp`, `/plugin`, `/theme`, `/statusline`, `/terminal-setup`, `/experimental`, `/instructions`, `/settings`, `/subagents` | Customize CLI behavior |
 | **Extensibility** | `/skills`, `/plugin`, `/agent`, `/fleet`, `/delegate` | Manage skills, plugins, agents, parallel execution, and cloud delegation |
@@ -120,9 +120,9 @@ In addition to slash commands, Copilot CLI supports keyboard shortcuts:
 | --- | --- |
 | `@` | Mention files — include file contents in context |
 | `#` | Reference GitHub issues, PRs, and discussions |
-| `!` | Execute a shell command directly (bypass Copilot; also the only way to access shell mode) |
+| `!` / `$` | `!` runs a shell command directly; `$` hands off to an interactive shell |
 | `Esc` | Cancel the current operation |
-| `Double-Esc` | Clear input when text is present; trigger undo when prompt is empty |
+| `Double-Esc` | Context-dependent interrupt/recall/rewind behavior; use `/rewind` for an explicit restore picker |
 | `ctrl+x → /` | Run a slash command |
 | `ctrl+c` | Cancel operation / clear input / exit |
 | `ctrl+d` | Exit the CLI on an empty prompt; use `ctrl+q` or `ctrl+enter` to queue a message instead |
@@ -130,17 +130,17 @@ In addition to slash commands, Copilot CLI supports keyboard shortcuts:
 | `ctrl+n` | Navigate down (alternative to down arrow) |
 | `ctrl+p` | Navigate up (alternative to up arrow) |
 | `ctrl+o` | Expand recent timeline (when no input) |
-| `ctrl+e` (no input) | Expand all timeline (same as `ctrl+o` — both expand all entries) |
+| `ctrl+e` (no input) | Expand all timeline entries; before a conversation, may open the environment picker |
 | `ctrl+e` (editing) | Cycle to end of visual/logical line |
 | `ctrl+t` | Toggle model reasoning display |
 | `ctrl+a` | Cycle to beginning of visual line; repeated press goes to beginning of logical line |
 | `ctrl+u` | Delete to beginning of logical line |
 | `Alt+D` | Delete word forward in text input |
-| `ctrl+y` | Edit plan in terminal editor |
-| `ctrl+x → ctrl+e` | Edit prompt in terminal editor |
+| `ctrl+y` | Terminal/editor-dependent; use the plan UI's displayed edit action |
+| `ctrl+x → e` | Edit prompt in external editor |
 | `ctrl+z` | Suspend/resume CLI (Unix platforms only) |
 | `ctrl+insert` | Copy selected text |
-| `ctrl+f` | Page forward |
+| `ctrl+f` | Open timeline search |
 | `ctrl+b` | Page back |
 | `ctrl+g` | Open current prompt in external editor; or dismiss dialog |
 | `Home` / `End` | Navigate within visual line; jump to top/bottom of scroll buffer |
@@ -155,7 +155,8 @@ In addition to slash commands, Copilot CLI supports keyboard shortcuts:
 > Some keyboard shortcuts require specific terminal capabilities:
 > - **Shift+Enter** for newlines requires terminals with kitty keyboard protocol support
 > - **Ctrl+Z** suspend/resume works on Unix platforms only
-> - **Ctrl+Y**, **Ctrl+X Ctrl+E**, and **Ctrl+G** require a terminal editor (set via `$COPILOT_EDITOR`, `$VISUAL`, or `$EDITOR`)
+> - External editing uses `$COPILOT_EDITOR`, `$VISUAL`, or `$EDITOR`; shortcut handling depends on terminal/TTY configuration. Prefer `/help` and displayed UI bindings when a shortcut differs.
+> - `Ctrl+Q` queues current input while work runs; `Ctrl+X` then `h` hides the sidebar.
 > - Use `--screen-reader` to enable screen reader optimizations for accessible output
 
 #### Branch Indicator
@@ -196,7 +197,7 @@ Some commands are covered in depth in later modules (`/mcp` in Module 5, `/skill
 | `/restart` | Hot restart the CLI while preserving your session |
 | `/version` | Display CLI version and check for updates |
 | `/voice` | Manage voice mode — dictation transcription via Foundry Local |
-| `/rewind` (alias `/undo`) | Rewind the last turn and revert file changes; also available via double-Esc |
+| `/rewind` (alias `/undo`) | Pick an earlier turn, then restore conversation only or conversation plus Copilot's changed files; protects files subsequently edited by you |
 | `/fork [name]` | Fork the current session into a new session, optionally with a name; `/fork worktree` forks into a new worktree based on the current branch |
 | `/worktree` | Create a new git worktree from your configured base ref and switch into it, leaving uncommitted changes behind (`/new worktree` for an empty session) |
 | `/move [branch-or-task]` | Move your uncommitted changes into a new git worktree and switch into it; omit the argument to auto-name it |
@@ -205,7 +206,7 @@ Some commands are covered in depth in later modules (`/mcp` in Module 5, `/skill
 | `/collect-debug-logs` | Collect debug logs to a local `.tgz` file or a secret GitHub gist |
 | `/refine` | Rewrite a rough, stream-of-consciousness prompt into a clear one for review (`ctrl+x → /` then `/refine` cleans up your current input) |
 | `/permissions [manual\|assisted\|allow-all\|show]` | Switch between permission modes, or show the current permission status |
-| `/changelog [summarize]` | Display the changelog for CLI releases; add `summarize` for an AI summary |
+| `/changelog [summarize]` | **Removal candidate (scope only):** retained command inventory entry; not required for the exercises |
 | `/new [prompt]` | Start a fresh conversation (keeps old session backgrounded); optionally provide a first message |
 | `/clear [prompt]` | Abandon the current session entirely; optionally provide a first message for the new session |
 | `/allow-all [on\|off\|show]` | Enable, disable, or check allow-all (YOLO) mode |
@@ -222,6 +223,8 @@ Some commands are covered in depth in later modules (`/mcp` in Module 5, `/skill
 #### Command Aliases
 
 Many commands accept a shorter or more familiar alias. Both forms behave identically:
+
+The `/changelog` and `/release-notes` inventory entries are retained as scope-removal candidates, not required learning steps.
 
 | Command | Alias | Command | Alias |
 | --- | --- | --- | --- |
@@ -276,6 +279,8 @@ Manage limits from inside a session:
 | `--mode <mode>` | Start CLI directly in a specific mode (`interactive`, `plan`, `autopilot`) |
 | `--autopilot` | Start CLI directly in autopilot mode |
 | `--plan` | Start CLI directly in plan mode |
+| `--fleet` | Run a prompt with parallel orchestration; combine with `-i`, `-p`, or piped stdin |
+| `--trust-folder` | Trust cwd configuration for one new prompt-mode session, without saving trust or granting tool/path/URL approvals |
 | `--agent <agent>` | Start with a specific agent, such as `rubber-duck` for high-signal critique |
 | `-n, --name <name>` | Set a name for the new session |
 | `--session-id <id>` | Resume an existing session or task by ID, or set the UUID for a new session |
@@ -290,7 +295,7 @@ Manage limits from inside a session:
 | `--enable-reasoning-summaries` | Request reasoning summaries for OpenAI models |
 | `--acp` | Start as an Agent Client Protocol server |
 
-> Run `copilot --help` for the complete list of flags, or see [Module 13](13-configuration.md#cli-flags-quick-reference) for the full flag reference.
+> Run `copilot --help` for installed flags; [Module 13](13-configuration.md#cli-flags-quick-reference) contains selected workflow references.
 
 #### Rubber-Duck Feedback Mode
 
@@ -307,7 +312,7 @@ copilot --agent rubber-duck
 ```
 
 > [!NOTE]
-> Built-in agents such as `rubber-duck` are designed for interactive sessions. Pairing `--agent` with a non-interactive `-p` run fails outright rather than degrading, so start an interactive session when you want this behavior. Custom agents you define in the repository do work with `-p`.
+> Use `/rubber-duck` for this exercise. Help/parser acceptance does not establish whether every built-in `--agent NAME -p` combination runs successfully; targeted authenticated checks remain necessary. Do not assume universal failure or automatic activation.
 
 The rubber-duck agent looks for bugs, logic errors, and design flaws without turning the session into a broad style review.
 
@@ -323,7 +328,7 @@ Use it before opening a pull request or after making authentication, authorizati
 
 The security review focuses on high-confidence security findings rather than general code style.
 
-> `/research` and `/chronicle` are experimental. `/chronicle` subcommands (`standup`, `search`, `tips`, `cost-tips`, `improve`, `reindex`) and behavior are subject to change.
+> `/research` is advertised by help; use `/help` to check account availability. `/chronicle` is marked experimental. Whether Research needs any account-specific opt-in requires runtime validation; do not impose an experimental prerequisite without evidence.
 
 > **Remote control** lets you observe and control sessions remotely. Use the `--remote` flag or `/remote` command to start a remote control session, allowing another Copilot CLI instance to connect.
 
@@ -520,12 +525,12 @@ A Python script evolves through multiple iterations with your guidance.
  List all files in the current directory with details
  ```
 
-3. Copilot will request to use the `shell` tool. You'll see three options:
+3. In `/permissions manual`, reads may run without prompting. If Copilot requests an unapproved shell operation, inspect the displayed command rule. Options include:
  - **Yes** - Allow this time only
  - **Yes, and approve TOOL for the rest of the session** - Session-wide approval
  - **No, and tell Copilot what to do differently** - Deny and redirect
 
-4. Select **Yes** (first option) to allow once.
+4. If prompted, select **Yes** to allow once; otherwise note the tool and effective permissions.
 
 5. Now ask:
  ```
@@ -535,16 +540,16 @@ A Python script evolves through multiple iterations with your guidance.
  > [!TIP]
  > Avoid prompts that reference a specific number of lines (e.g., "first 10 lines") for short files — Copilot may reason about the file length instead of running the expected command.
 
-6. Copilot asks for shell permission again (since you only approved once).
+6. Inspect whether this read is auto-approved or prompts; do not expect a prompt for every read.
 
-7. This time select **Yes, and approve shell for the rest of the session**.
+7. If prompted, approve the displayed command family for the session, not an assumed blanket shell permission.
 
 8. Ask another command:
  ```
  Count the lines in hello.py
  ```
 
-9. Notice Copilot doesn't ask for permission this time.
+9. Compare the actual rule used. Approving `cat` does not approve `wc` or unrelated commands.
 
 **Expected Outcome:**
 You understand the difference between one-time and session-wide tool approval.
@@ -579,13 +584,13 @@ You understand the difference between one-time and session-wide tool approval.
  > [!NOTE]
  > Shell approval matches on the first-level subcommand, so `shell(git status)` allows exactly `git status`. Use `shell(git:*)` when you want to allow every `git` subcommand.
 
-5. Pipe file content as context:
+5. Include file content as context:
  ```bash
- cat README.md | copilot -p "Explain what this file contains"
+ copilot -p "Explain what this file contains: $(cat README.md)"
  ```
 
  > [!TIP]
- > When piping content to Copilot, use prompts that reference "this content" or "this file" rather than "this output" to avoid Copilot responding with "I don't see any output to explain."
+ > Piped input is ignored when `-p` supplies a prompt. Here, quoted command substitution includes the file content in the prompt. Refer to "this content" or "this file" rather than "this output".
 
 **Expected Outcome:**
 Commands execute and exit without entering interactive mode.
@@ -738,7 +743,7 @@ You can choose the appropriate mode for any task.
 - `ls`, `cat`, `head`, `tail` - Read-only
 - `git status`, `git log`, `git diff` - Read-only git
 - `pwd`, `echo` - Environment queries
-- Linters and formatters - Analysis only
+- Linters without fix options may be analysis-only; formatters and fix modes normally write files. Review commands/options.
 
 ## Summary
 
@@ -756,7 +761,7 @@ You can choose the appropriate mode for any task.
 - ✅ `/rubber-duck` starts a critique-focused feedback turn inside an interactive session
 - ✅ `--agent rubber-duck` starts a critique-focused interactive session
 - ✅ `/after` and `/every` schedule one-shot and recurring prompts, and are not listed by `copilot help commands`
-- ✅ `/rewind` (alias `/undo`, or double-Esc) rewinds the last turn and reverts file changes
+- ✅ `/rewind` picks an earlier turn and offers conversation-only or conversation-and-files restoration
 - ✅ `/permissions` switches between `manual`, `assisted`, and `allow-all` permission modes
 - ✅ `/fork` branches the current session into a new one
 - ✅ `/refine` rewrites a rough prompt into a clear one for review
@@ -766,7 +771,7 @@ You can choose the appropriate mode for any task.
 - ✅ `--remote` and `/remote` for remote control sessions
 - ✅ `/diff`, `/agent`, `/feedback`, and `/ide` work while agent is running
 - ✅ `Alt+D` deletes word forward in text input
-- ✅ `ctrl+o` expands all timeline entries (same as `ctrl+e`)
+- ✅ `ctrl+o` expands recent timeline entries; `ctrl+e` expands all after a conversation starts
 - ✅ `Ctrl+L` clears terminal screen without clearing session
 - ✅ Status bar shows `@files`, `#issues`, and `/help` hints while typing
 - ✅ Branch indicator shows unstaged (*), staged (+), and untracked (%) status

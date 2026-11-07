@@ -64,7 +64,7 @@ style: |
 **Custom scripts** that run at key points in the agent lifecycle
 
 ```
-Prompt → Session Start → Pre-Tool → Execute → Post-Tool → Session End
+Session start → Prompts → Pre-Tool → Execute → Success/failure → Session end
    ↓           ↓            ↓                     ↓           ↓
  Hook        Hook         Hook                  Hook        Hook
 ```
@@ -81,10 +81,10 @@ Use cases: **logging**, **security guardrails**, **auditing**, **alerts**
 | `userPromptSubmitted` | User sends prompt | Audit trail |
 | `userPromptTransformed` | Prompt turned into model-facing form | Prompt rewriting |
 | `preToolUse` | Before tool runs | **Permission control** |
-| `preMcpToolCall` | Before an MCP tool request is sent | Adjust MCP metadata |
+| `preMcpToolCall` | **Unverified** | Not in public reference; runtime evidence required |
 | `postToolUse` | After successful tool run | Verification, logging |
 | `postToolUseFailure` | After tool failure | Error handling |
-| `errorOccurred` | A model call fails | Alerts, monitoring |
+| `errorOccurred` | Internal errors with context/recoverability | Alerts, monitoring |
 | `preCompact` | Before compaction | State saving |
 | `agentStop` | Agent stops at end of turn | Turn-level automation |
 | `subagentStart` / `subagentStop` | Sub-agent spawned / completed | Context injection, results |
@@ -97,12 +97,14 @@ Use cases: **logging**, **security guardrails**, **auditing**, **alerts**
 
 **Repository hooks only run in trusted folders**
 
-- Answer **Yes, and remember** at the trust prompt
-- Or add the path to `trustedFolders`
+- Session-only admission is sufficient; review hooks first
+- `--trust-folder` admits one new prompt-mode run without saving trust
 
 In an untrusted folder, `.github/hooks/*.json` is discovered but **never executed** — and **no error is shown**
 
 Personal hooks in `~/.copilot/hooks/` run regardless of trust
+
+Exact `COPILOT_ALLOW_ALL=true` also trusts executable cwd configuration.
 
 **Do this before Exercise 1.**
 
@@ -114,13 +116,15 @@ Personal hooks in `~/.copilot/hooks/` run regardless of trust
 |-------|----------|
 | **Repository** | any `*.json` in `<git root>/.github/hooks/` |
 | **Personal** | any `*.json` in `~/.copilot/hooks/` |
-| **Inline** | the `hooks` key — user-level from managed global config, repo-level in `settings.json` |
+| **Inline** | personal `settings.json` or repo `.github/copilot/settings.json` / `settings.local.json` |
 
 > Do not hand-edit global `config.json`; it is machine-managed and holds credentials.
 > Put personal hooks in `~/.copilot/hooks/` and repository hooks in repository settings.
 
-Turn hooks off with `disableAllHooks`, or suppress individual ones with `disabledHooks`
+Turn hooks off with `disableAllHooks`, or suppress content-hash IDs with `disabledHooks`
 (policy hooks ignore both)
+
+Repository settings disable hooks across sources; a hook-file flag disables only that file.
 
 ---
 
@@ -144,6 +148,9 @@ Lives in any `*.json` file under `.github/hooks/` — e.g. `hooks.json`
 }
 ```
 
+The PowerShell path is schematic: author and test that counterpart before using
+it on Windows. The module supplies the Bash implementation only.
+
 ---
 
 ## Compatible Hook Schemas
@@ -161,6 +168,9 @@ Copilot accepts native and Claude-compatible hook files:
 }
 ```
 
+`./check.sh` is a placeholder for your own compatible-payload validator, not a
+script supplied by the workshop.
+
 - PascalCase event names and nested `matcher` / `hooks` are supported
 - Optional `type` and `version` fields may be present; `version` may be omitted
 - camelCase keys use the native Copilot payload; PascalCase uses the compatible payload
@@ -169,14 +179,18 @@ Copilot accepts native and Claude-compatible hook files:
 
 ## Payload Shape Follows the Key
 
-The event key's casing decides the payload — the two shapes never mix
+Most payload fields follow event-key casing; check event-specific exceptions
 
 | Event key | Payload fields |
 |-----------|----------------|
-| camelCase `preToolUse` | `sessionId`, `timestamp` (ms), `cwd`, `toolName`, `toolArgs` (JSON **string**) |
-| PascalCase `PreToolUse` | `hook_event_name`, `session_id`, `timestamp` (ISO 8601), `cwd`, `tool_name`, `tool_input` (JSON **object**) |
+| camelCase `preToolUse` | `sessionId`, ms timestamp, `cwd`, `toolName`, unknown-typed `toolArgs` |
+| PascalCase `PreToolUse` | `hook_event_name`, `session_id`, ISO timestamp, `tool_name`, `tool_input` |
 
 Use **camelCase** for Copilot CLI; use **PascalCase** to reuse a VS Code or Claude Code hooks file
+
+Native notifications mix camelCase session fields with `hook_event_name` /
+`notification_type`. Permission requests use `toolInput`.
+`toolArgs` can be an object, JSON-encoded string, or raw patch text.
 
 ---
 
@@ -203,8 +217,11 @@ Track session start/end with `sessionStart` and `sessionEnd`
 
 **Use case:** Audit trail, usage metrics, compliance
 
-> `sessionStart` and `sessionEnd` fire **once per session**, not once per prompt.
-> Use `userPromptSubmitted` for per-prompt behavior.
+> Session lifecycle includes resumed starts (`startup`, `resume`, `new`) and `/clear` endings. Validate ordering; use prompt hooks for per-prompt work.
+> Preserve configs in separate exercise files; session-ID-keyed private state avoids shared `/tmp` collisions.
+> Two interactive prompts share one start; `/clear` and `/exit` end with `user_exit`.
+> `--trust-folder` conflicts with `--resume`; admit trust again interactively when needed.
+> Prompt completion uses `complete`; autopilot can repeat completion endings.
 
 ---
 
@@ -225,7 +242,8 @@ Track session start/end with `sessionStart` and `sessionEnd`
 }
 ```
 
-> `ask` lets hooks request confirmation instead of silently allowing or denying
+> Without an interactive approver, `ask` is denied (including prompt mode/autopilot).
+> Command errors deny; **timeouts fail open**. HTTP pre-tool failures also fail open.
 
 ---
 
@@ -234,7 +252,7 @@ Track session start/end with `sessionStart` and `sessionEnd`
 ```bash
 INPUT=$(cat)
 TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName')
-ARGS=$(echo "$INPUT" | jq -r '.toolArgs | fromjson')
+ARGS=$(echo "$INPUT" | jq '.toolArgs | if type == "string" then fromjson else . end')
 COMMAND=$(echo "$ARGS" | jq -r '.command')
 
 if [[ "$COMMAND" == *"sudo"* ]]; then
@@ -244,30 +262,28 @@ fi
 echo '{}'
 ```
 
-> **Note:** Copilot has built-in safety that blocks some commands (like `rm -rf /`) before hooks run. Use hooks for organization-specific policies.
+> Illustrative substring checks are bypassable. Never test destructive commands or treat hooks as a complete security boundary.
 
 ---
 
 ## Reshaping the Tool Call
 
-`preToolUse` hooks can also return these fields — the CLI respects them
+Object mutation changes execution; verify actual output and a disposable side effect.
+The displayed tool call can still show the original arguments.
 
 | Field | Effect |
 |-------|--------|
-| `modifiedArgs` | Replace the tool arguments (JSON string) |
-| `updatedInput` | Replace the prompt text |
-| `additionalContext` | Inject extra context for the turn |
+| `modifiedArgs` | Replace tool arguments with an **object** |
+| `updatedInput` | Not a documented pre-tool field; do not use here |
+| `additionalContext` | Supported by other events, not a pre-tool decision field |
 
 ```json
 {
-  "modifiedArgs": "{\"command\": \"ls -la --color=never\"}",
-  "updatedInput": "Modified prompt text",
-  "additionalContext": "Extra context injected by hook"
+  "modifiedArgs": {"command": "ls -la --color=never"}
 }
 ```
 
-> Return only `permissionDecision`/`permissionDecisionReason` or the fields
-> above — other keys are ignored
+> `exec`/`args` avoid shell expansion; HTTP/prompt hooks, matchers, progress, agent-scoped hooks, and bounded stop continuation are reference options, not security guarantees.
 
 ---
 
@@ -279,8 +295,10 @@ Plugin-packaged hooks receive stable paths:
 - `PLUGIN_DATA` / `COPILOT_PLUGIN_DATA` / `CLAUDE_PLUGIN_DATA`
 - `COPILOT_PROJECT_DIR` / `CLAUDE_PROJECT_DIR`
 
+Ordinary repository hooks need not have plugin installation/data directories.
+
 The `notification` family covers **background shell completion**, **permission
-prompts**, **elicitation/questions**, and **subagent completion** — useful for
+prompts**, **elicitation/questions**, and **background subagent completion** — useful for
 desktop, Slack, or monitoring integrations.
 
 ---
@@ -297,7 +315,12 @@ RESULT=$(echo "$INPUT" | jq -r '.toolResult.resultType')
 echo "[$(date -Iseconds)] $TOOL_NAME: $RESULT" >> logs/audit.log
 ```
 
-> `resultType` is `"success"` or `"error"`
+> `postToolUse` receives success. Register `postToolUseFailure` for its `error` field.
+> Internal errors use `.error.name`, `.error.message`, `errorContext`, and `recoverable`.
+> Read a nonexistent disposable file once to test failure logging: expect
+> `TOOL_COMPLETE: view result=failure` and an alert. Its error is a string.
+> A synthetic nested-error replay does not prove `errorOccurred` fired.
+> Path guards require recognized direct write tools; raw `apply_patch` input is not covered.
 
 ---
 
@@ -312,8 +335,8 @@ Open **Module 9** in `docs/workshop/09-hooks.md`
 2. **Exercise 2** — Session logging hooks
 3. **Exercise 3** — Prompt auditing hook
 4. **Exercise 4** — Pre-tool permission control
-5. **Exercise 5** — Post-Tool Verification
-6. **Exercise 6** — Error handling hooks
-7. **Exercise 7** — Directory-Restricted Hooks
+5. **Exercise 5** — Success + failure logging
+6. **Exercise 6** — Nested error payload fields
+7. **Exercise 7** — Normalized-path illustration (not a security boundary)
 
 ⏱️ You have **~16 minutes**

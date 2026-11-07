@@ -139,13 +139,20 @@ copilot plugin install https://github.com/owner/my-plugin.git
 
 > Audit plugin source and permission needs before installing
 
+**WorkIQ:** searches Microsoft 365 mail, meetings, documents, Teams, and people.
+Requires a work account, tenant consent, browser authentication, and EULA review.
+Its runtime needs vendor/data-handling review, not just source review.
+The npm runtime declares `SEE EULA`; public plugin assets have their own license.
+The hosted plugin can expose **writes**, not just queries.
+
 ---
 
 ## Registry, Authentication & Setup
 
-- MCP servers come from a **policy-configured registry**, not `copilot plugin install`
+- Registry installation uses a **policy-configured registry**
 - Registry access may require authentication and interactive secret entry
 - Add MCP servers with `/plugin`, `/mcp`, or `copilot mcp add`
+- Manual local configs and plugin-bundled servers do not require registry installation
 - A plugin manifest may show a **post-install message** with setup steps,
   required configuration, or usage tips
 
@@ -177,7 +184,9 @@ copilot plugin list --json        # installed plugins
 copilot mcp list                  # MCP servers
 copilot skill list                # skills, grouped by source
 copilot instruction list          # custom instruction sources
+copilot instruction list --json
 copilot lsp list                  # language servers
+copilot lsp list --json
 
 copilot plugin enable arch@awesome-copilot
 copilot plugin disable arch@awesome-copilot
@@ -187,16 +196,44 @@ copilot skill disable my-skill
 
 > `/plugin` opens the interactive plugin dashboard;
 > `/env` shows every loaded kind at once
-> A `[plugin-dir]` warning about a bundled plugin directory with no `plugin.json` or `SKILL.md` may print first — benign, the listing that follows is complete
+> A missing-manifest warning means the named directory did not load.
+> Mounted MCP/LSP components can be absent from shell inventories;
+> inspect the session and dispatch them. Installed components appear in those listings.
 
 ---
 
 ## Common Integration Packages
 
-Common MCP packages include `@modelcontextprotocol/server-filesystem`,
-`@modelcontextprotocol/server-postgres`, `@modelcontextprotocol/server-memory`,
-and `@anthropic/mcp-server-puppeteer`. Verify source, policy, authentication,
-and requested permissions before installation.
+Supported examples: `@modelcontextprotocol/server-filesystem`,
+`@modelcontextprotocol/server-memory`, and `@playwright/mcp` (browser prerequisites apply).
+
+**Removal candidates retained, do not install:** `@modelcontextprotocol/server-postgres` (not supported, no fixture) and `@anthropic/mcp-server-puppeteer` (nonexistent).
+
+---
+
+## A Real Local Plugin Bundle
+
+Exercise 5 creates `plugin.json`, `.mcp.json`, and `index.js`:
+
+```json
+{"name":"my-tools","description":"Workshop timestamp tools","mcpServers":".mcp.json"}
+```
+
+Use `${PLUGIN_ROOT}/index.js` in the MCP component and install SDK plus `zod`.
+
+```bash
+copilot --plugin-dir "$PWD"
+```
+
+Verify `/env` and `/mcp`; an MCP-only config is not a plugin.
+Dispatch `get-timestamp`; fresh unattended calls can need tool approval.
+Paths are relative to the plugin root. Keep complete skill resources/scripts.
+Use advertised agent IDs such as `my-tools:reader`; inspect actual tools/model fallback.
+LSP needs its executable and workspace language dependencies; verify a real response.
+**Removal candidate:** remote `requestInit.headers` nesting is unsupported;
+use explicit `type: http` and top-level `headers`.
+`enabledPlugins` / `extraKnownMarketplaces` are maps;
+`strictKnownMarketplaces` is a managed allowlist array.
 
 ---
 
@@ -204,16 +241,19 @@ and requested permissions before installation.
 
 Before installing any plugin:
 
-- Source code is **open and auditable**
+- Source is **open and auditable**, or proprietary components have an approved vendor review
 - Actively maintained
 - Minimal dependencies
 - No known vulnerabilities
 - Clear permission requirements
 
 ```bash
-# Restrict plugin capabilities
-copilot --allow-tool 'plugin-name' --deny-tool 'shell(rm)'
+# Restrict model tool calls; use the MCP server name
+copilot --allow-tool 'my-tools' --deny-tool 'shell(rm)'
 ```
+
+Tool approval and path access are separate; reviewed external scripts can need
+`--add-dir`. Deny rules do not sandbox plugin hooks or server processes.
 
 ---
 
@@ -226,8 +266,13 @@ copilot --allow-tool 'plugin-name' --deny-tool 'shell(rm)'
 - **LSP servers** — code intelligence
 - **Marketplace catalogs** point to discoverable packages; they are sources, not bundled capabilities
 
-Hook and plugin scripts receive `PLUGIN_ROOT`, `PLUGIN_DATA`, and
-`COPILOT_PROJECT_DIR` (plus `COPILOT_`/`CLAUDE_` variants)
+Root aliases point to the loaded plugin directory.
+Hooks receive `COPILOT_PLUGIN_DATA` / `CLAUDE_PLUGIN_DATA` and project aliases.
+Do not assume bare `PLUGIN_DATA` or hook variables exist in MCP subprocesses.
+Variable and component-path rules depend on the manifest format.
+
+Catalog entries can point to other repos: inspect `.claude-plugin/marketplace.json`.
+For a checked-in example, read `plugins/spark/README.md`, not `plugins/workiq/README.md`.
 
 ---
 
@@ -239,9 +284,9 @@ Open **Module 7** in `docs/workshop/07-plugins.md`
 
 - **Exercise 1** — Explore official plugins
 - **Exercise 2** — Explore work-iq-mcp
-- **Exercise 3** — Install a community MCP server
-- **Exercise 4** — Database plugin integration
-- **Exercise 5** — Create a custom plugin
+- **Exercise 3** — Retained redundant MCP comparison (removal candidate)
+- **Exercise 4** — Inactive database design; removal candidate pending maintained server/fixture
+- **Exercise 5** — Create and load an actual manifest + MCP bundle
 - **Exercise 6** — Plugin security review
 - **Exercise 7** — Plugin discovery
 - **Exercise 8** — Audit every kind of configuration

@@ -61,12 +61,14 @@ style: |
 
 ## What are Custom Agents?
 
-**Specialized, model-aware Copilot personas** that can report their active model, with:
+**Specialized Copilot personas** with configurable model preferences, with:
 
 - 🎭 Defined role and expertise
 - 🔧 Specific tool access
 - 🚫 Clear boundaries
 - 📚 Domain knowledge
+
+Model self-reports are not proof of the model used for dispatch.
 
 Live in **`.github/agents/name.agent.md`**, **`.claude/agents/`**, or **`~/.copilot/agents/`**
 
@@ -80,6 +82,7 @@ Create with **`/agent`** slash command or manually
 ---
 name: test-agent
 description: Writes tests following TDD principles
+include-custom-instructions: true
 model: auto # optional
 tools: # optional (default = all)
  - shell
@@ -100,6 +103,8 @@ You are a senior QA engineer...
 
 File: `.github/agents/test-agent.agent.md`
 
+`description` is required; `name` is optional. `.agent.md` is the workshop convention; `.md` also works.
+
 ---
 
 ## The `skills:` Field
@@ -115,21 +120,22 @@ skills:
 `skills:` declares which skills are **eagerly loaded** when the agent is
 invoked — the agent always has that skill content available.
 
-> The `model` field accepts display names and vendor suffixes in addition to
-> full model identifiers. Copilot resolves the closest matching model.
+> The `model` field accepts identifiers and display names. Prefer an available
+> model's exact ID; fallback is not proof the requested model was honored.
 
 ---
 
-## ⚠️ Restart to Load New Agents
+## Agent Discovery Checks
 
 | How the agent got there | Availability |
 |-------------------------|--------------|
-| Manually created `.agent.md` file | **Requires a CLI restart** |
-| Edited an existing `.agent.md` file | **Requires a CLI restart** |
-| Installed via `/plugin install` | **Hot-loaded** — available immediately |
+| Manually created `.agent.md` file | Inspect `/agent`, restart if missing |
+| Edited an existing `.agent.md` file | Verify loaded definition; restart if needed |
+| Installed via `/plugin install` | Check `/agent` / `/env`; hot-loading needs runtime evidence |
 
-If a new agent doesn't show up in `/agent`, it almost certainly means
-the CLI hasn't been restarted yet — not that the file is wrong.
+Check location, YAML, and trust as well as restarting. Do not infer runtime activation from parser acceptance.
+
+Previewing the first lines of a profile is not YAML parser validation.
 
 ---
 
@@ -150,18 +156,18 @@ Not listed in the `/agent` menu
 
 | Agent | What it does | How it runs |
 |-------|-------------|---------|
-| **Explore** | Fast codebase Q&A; read-only GitHub MCP tools | Automatic |
+| **Explore** | Separate-context codebase Q&A; inspect tool inventory | May be dispatched |
 | **Task** | Run tests, builds, linters | Automatic |
 | **General-purpose** | Main-agent capabilities in a separate context | Automatic |
 | **Code-review** | High-signal diff reviews | Automatic / `/review` |
-| **Rubber-duck** | Critique on a complementary model | Automatic / `/rubber-duck` |
+| **Rubber-duck** | Critique on a complementary model | `/rubber-duck`; do not assume activation |
 | **Security-review** | 11 vulnerability categories | `/security-review` |
 | **Research** | Deep investigations | `/research` |
 | **REM** | Memory consolidation | Background |
 
 **Plan** and **fleet** are session *modes*, not agents
 
-> Built-ins are meant for interactive use — not every name works with `--agent`
+> Built-in `--agent NAME -p` runtime behavior needs focused checks. Inspect `/tasks` for actual delegation.
 
 ---
 
@@ -170,16 +176,17 @@ Not listed in the `/agent` menu
 ```
 User agents (~/.copilot/agents/) ← highest priority
  ↓
-Enterprise agents (.github-private repo)
+Project .github/agents/ (deepest first)
  ↓
-Organization agents (.github-private repo)
+Project .claude/agents/ (deepest first)
  ↓
-Repository agents (.github/agents/ or .claude/agents/)
+Added roots (.github/agents/, trusted by adding root)
  ↓
-AGENTS.md (root or subdirectory)
+Plugin agents → remote organization/enterprise agents
 ```
 
-User-level agents **override** repo-level agents with the same name
+First same **file-derived ID** wins; display names do not deduplicate.
+`team/reviewer.agent.md` → `team--reviewer`; `AGENTS.md` is instructions.
 Agents can **delegate to other agents** for complex workflows
 
 ---
@@ -196,9 +203,31 @@ Bound delegation by depth and concurrency on usage-based billing accounts:
 | `customAgents.defaultLocalOnly` | Skip remote org/enterprise agents |
 
 - `/subagents` sets per-agent model, effort, and context-tier overrides
-- Agent names are lowercase-hyphenated and at most 64 characters
-- Unknown frontmatter fields produce warnings: fix spelling/schema rather than
-  assuming the field took effect
+- Prefer short lowercase-hyphenated IDs; do not apply skill name limits to agent fields
+- Unrecognized frontmatter can be ignored without visible warnings:
+  successful loading does not prove a field took effect
+
+---
+
+## Inheritance and Restrictions
+
+- Custom subagents opt into repository instructions with `include-custom-instructions: true`
+- Parent-only extra instruction directories do not carry over; `--no-custom-instructions` wins
+- Delegated analyzer: `view`/`grep`/`glob` only with `strict-tools-list: true`
+- Selected session analyzer also has `skill`/session `sql`; inspect actual tool inventory/events
+- Local agent-scoped hooks follow trust/policy; remote agents do not run them
+- `copilot --fleet -i "Add tests for independent modules"` starts parallel orchestration
+
+---
+
+## Agent Model Policy
+
+- Use `model`, `model-policy: preferred|required`, and `reasoning-effort`
+- Do not assume `models` overrides `model` or camelCase policy/effort fields take effect
+- Required subagent policy replaces conflicting overrides; unavailable required models fail dispatch
+- Session `--agent` can warn and fall back even with required policy
+- `/subagents` overrides, account access, and Auto affect dispatch
+- Self-reported model names are not runtime proof
 
 ---
 
@@ -229,9 +258,9 @@ Open **Module 8** in `docs/workshop/08-custom-agents.md`
 - **Exercise 1** — Create a repository agent
 - **Exercise 2** — Documentation agent
 - **Exercise 3** — Built-in agents
-- **Exercise 4** — Agent with tool restrictions
+- **Exercise 4** — Analyzer with read/search only (shell writes are not covered by write denial)
 - **Exercise 5** — User-level agents
-- **Exercise 6** — Subagents & delegation
+- **Exercise 6** — Coordinator and repository-instruction opt-in for specialists
 - **Exercise 7** — Debugging agent config
 
 ⏱️ You have **~16 minutes**

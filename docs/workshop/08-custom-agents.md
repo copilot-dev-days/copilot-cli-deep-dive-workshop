@@ -24,7 +24,7 @@ Custom agents are specialized versions of Copilot with:
 - **Clear boundaries** - What they should never do
 - **Domain knowledge** - Context about their specialty
 
-Each custom agent is defined by a Markdown file with an **`.agent.md`** extension.
+Use **`.agent.md`** as the workshop convention; the CLI also derives agent IDs from `.md` files.
 
 ### Agent Profile Structure
 
@@ -44,7 +44,7 @@ skills: # Optional: eagerly load named skills
 [Markdown body with detailed instructions]
 ```
 
-> **Note:** The `model` field accepts display names and vendor suffixes in addition to full model identifiers. Copilot resolves the closest matching model.
+> **Note:** The `model` field accepts model identifiers and display names. Prefer an available model's exact identifier and inspect actual dispatch: a fallback does not mean the requested model was honored.
 
 > **Note:** The `skills` field declares which skills should be eagerly loaded when the agent is invoked. Without this field, skills are loaded on-demand based on prompt matching. Eager loading ensures the agent always has access to specific skill content.
 
@@ -58,10 +58,10 @@ You can create agent files manually, or use the **`/agent`** slash command in in
  - **User** (`~/.copilot/agents/`)
 3. Choose whether to have Copilot generate the agent profile or create it yourself.
 4. Configure tool access (default is all tools).
-5. **Restart the CLI** to load your new custom agent.
+5. Inspect `/agent`; if the file is not visible, restart and check again.
 
 > [!NOTE]
-> Manually created `.agent.md` files require a CLI restart to take effect. However, agents installed via `/plugin install` are **hot-loaded** and available immediately without restarting. See [Module 7](07-plugins.md).
+> Restarting is a reliable discovery troubleshooting step, not a universal hot-loading guarantee. Verify manual and plugin agent visibility in `/agent` and `/env`; exact live activation needs a runtime check. See [Module 7](07-plugins.md).
 
 ### Invoking Agents
 
@@ -79,16 +79,28 @@ Custom agents can be invoked in four ways:
 ```
 User agents (~/.copilot/agents/)
  ↓
-Enterprise agents (.github-private repo)
+Project .github/agents/ (cwd upward to git root)
  ↓
-Organization agents (.github-private repo)
+Project .claude/agents/ (cwd upward to git root)
  ↓
-Repository agents (.github/agents/ or .claude/agents/)
+Added roots (.github/agents/, trusted by adding the directory)
  ↓
-AGENTS.md (root or directory-specific)
+Plugin agents
+ ↓
+Remote organization/enterprise agents
 ```
 
-> **Note:** If you have custom agents with the same name in both user and repository locations, the one in your home directory (`~/.copilot/agents/`) will be used.
+> **Note:** Deduplication uses **file-derived IDs**, not display names. The first same-ID definition wins. `agents/team/reviewer.agent.md` yields `team--reviewer`; same display names with different IDs can both load. `AGENTS.md` is instructions, not an agent tier.
+
+### Instruction Inheritance and Model Policy
+
+Custom subagents need `include-custom-instructions: true` to receive repository instructions. Session agents and general-purpose subagents receive them; built-in Explore/Task/Code-review do not. Parent-only extra instruction directories are not inherited; `--no-custom-instructions` disables repository loading even with opt-in.
+
+Use `model` for the authored model, `model-policy: preferred` to permit overrides, and `model-policy: required` to enforce the authored model in delegated subagents. A conflicting explicit dispatch model is replaced by the required authored model; an unavailable required subagent model fails dispatch. `reasoning-effort` sets authored effort. Do not rely on `models` overriding `model`, or on camelCase `modelPolicy` / `reasoningEffort` frontmatter: these fields can be ignored without a visible warning.
+
+Session selection with `--agent` is distinct from delegated subagent policy: an unavailable authored model can produce a warning and session-model fallback even with `model-policy: required`. Explicit dispatch values, per-subagent settings, account availability, and Auto routing affect resolution; Auto subagents inherit the resolved session model. Inspect dispatch/UI evidence, not an agent's self-reported model.
+
+Agent-scoped `hooks` run alongside session hooks while that local agent is selected, subject to workspace trust and disable/policy controls. Remote agent definitions do not execute scoped hooks (Module 9).
 
 ### Built-in Agents
 
@@ -96,18 +108,18 @@ Copilot CLI includes specialized built-in agents:
 
 | Agent | Purpose | How it runs |
 |-------|---------|-------------|
-| **Explore** | Fast codebase analysis without context clutter; has read-only access to GitHub MCP server tools | Selected automatically |
+| **Explore** | Fast codebase analysis in separate context; inspect its actual tool inventory rather than assuming GitHub access | May be selected by the main agent |
 | **Task** | Run development commands (tests, builds, linters, formatters) with smart output handling | Selected automatically |
 | **General-purpose** | Same capabilities as the main agent, in a separate context window | Selected automatically |
 | **Code-review** | High signal-to-noise review of staged, unstaged, or branch diffs | Selected automatically, or `/review` |
-| **Rubber-duck** | Constructive critique of plans, designs, implementations, and tests, on a complementary model | Selected automatically, or `/rubber-duck` |
+| **Rubber-duck** | Constructive critique of plans, designs, implementations, and tests, on a complementary model | Use `/rubber-duck`; do not assume automatic activation |
 | **Security-review** | Security-focused review of staged, unstaged, and branch diffs across 11 vulnerability categories | `/security-review` |
 | **Research** | Deep research across code, repositories, and web sources | `/research` |
 | **REM** | Background memory consolidation that updates the dynamic context board | Background only |
 
 > **Note:** Built-in agents are not included in the `/agent` list. They are invoked via the main agent's task tool. Research, Security-review, and REM are not selected automatically — Research and Security-review run from their slash commands, and REM runs in the background.
 
-> **Note:** Built-in agents are designed for an interactive session, and not every built-in name is addressable with the `--agent` flag. Names such as `explore`, `task`, `code-review`, `rubber-duck`, `security-review`, and `research` resolve, while others do not — and even a name that resolves may not run in programmatic mode (`-p`). Reach for built-ins through the main agent, their slash commands, or `/agent` rather than through `--agent`, and use `--agent` for your own custom agents.
+> **Note:** Use built-ins through the main agent or advertised slash commands for these exercises. `--agent NAME -p` runtime support, automatic activation, and actual model reporting require targeted authenticated checks; parser acceptance alone does not prove them.
 
 ### Sub-Agent Depth and Concurrency Limits
 
@@ -140,6 +152,7 @@ Copilot CLI includes specialized built-in agents:
  ---
  name: test-agent
  description: Writes comprehensive unit tests following TDD principles. Use for creating tests, improving coverage, and validating code behavior.
+ include-custom-instructions: true
  tools:
  - shell
  - write
@@ -246,6 +259,7 @@ Agent creates comprehensive tests following your specifications.
  ---
  name: docs-agent
  description: Creates and maintains technical documentation. Use for README files, API docs, architecture docs, and user guides.
+ include-custom-instructions: true
  tools:
  - read
  - write
@@ -361,9 +375,9 @@ Agent creates well-structured documentation.
  How is authentication implemented in this codebase?
  ```
 
- Copilot will automatically delegate to the Explore agent when it determines codebase analysis is needed. The Explore agent:
+ Copilot may delegate to Explore; inspect `/tasks` rather than assuming activation. The Explore agent:
  - Performs fast analysis
- - Doesn't clutter main context
+ - Reduces parent-context pressure; returned summaries still consume context and usage
  - Great for learning codebases
 
 2. **Use the Task agent** for running commands:
@@ -430,7 +444,9 @@ Agent creates well-structured documentation.
  - Covers 11 vulnerability categories
  - Minimizes false positives
 
-> **Note:** Built-in agents are not listed in the `/agent` menu. Explore, Task, General-purpose, Code-review, and Rubber-duck are invoked automatically by the main agent when it determines their expertise is needed; Research and Security-review run from their slash commands.
+> **Note:** Use `/tasks` to observe actual delegation. Request Research, Security-review, and Rubber-duck through their slash commands; do not infer universal activation from help listings.
+
+> Fleet can also start at launch: `copilot --fleet -i "Add tests for independent service modules"`. Permissions still apply; parallel work consumes usage and needs bounded scope.
 
 **Expected Outcome:**
 Each built-in agent provides specialized assistance.
@@ -447,9 +463,11 @@ Each built-in agent provides specialized assistance.
  ---
  name: analyzer
  description: Analyzes code for quality, security, and performance issues without making changes. Use for code audits and reviews.
+ include-custom-instructions: true
+ strict-tools-list: true
  tools:
  - read
- - shell
+ - search
  ---
 
  # Code Analyzer
@@ -502,11 +520,11 @@ Each built-in agent provides specialized assistance.
  ...
  ```
 
- ## Commands I Use
- - `grep -r "pattern" .` - Search for patterns
- - `wc -l` - Count lines
- - `find . -name "*.js"` - Find files
- - Linter commands (read-only)
+ ## Analysis Tools
+ - Search text patterns with search tools
+ - Inspect files with read tools
+ - Locate JavaScript files with search tools
+ - Report suggested linter checks; do not run shell programs
 
  ## IMPORTANT: READ-ONLY
  I analyze but NEVER modify files. My purpose is to report findings.
@@ -514,7 +532,7 @@ Each built-in agent provides specialized assistance.
  EOF
  ````
 
-2. Notice the `tools` section excludes `write`.
+2. Notice the `tools` section excludes **both writing and shell execution**. `strict-tools-list: true` limits the delegated analyzer to its authored read/search groups. A selected session agent can still receive `skill` and session `sql` tools: inspect the effective inventory separately for session agents and subagents. Denying `write` alone does not prevent shell-based writes; persona boundaries alone are guidance.
 
 3. Restart the CLI, then test the agent:
  ```bash
@@ -529,10 +547,10 @@ Each built-in agent provides specialized assistance.
  copilot --agent analyzer --prompt "Review the authentication module for security issues"
  ```
 
-4. The agent can only read and run shell commands, not write.
+4. The delegated analyzer has `view`, `grep`, and `glob`, without file-write, shell, or delegation tools. Selecting it with `--agent` can also expose `skill` and session `sql`; that is not an exclusively read/search inventory.
 
 **Expected Outcome:**
-Agent performs analysis without modification capabilities.
+Agent performs read/search analysis. Confirm the effective tool inventory contains no file-modifying, shell, or delegation tools before relying on its restrictions; this is not whole-process OS isolation. Use actual tool events and available-tool telemetry rather than a model's description of its capabilities.
 
 ### Exercise 5: User-Level Agents
 
@@ -545,11 +563,12 @@ Agent performs analysis without modification capabilities.
  ~/.copilot/agents/AGENT-NAME.agent.md
  ```
 
- User-level agents are available across all repositories and take priority over repository agents with the same name.
+ User-level agents are available across repositories and take priority over repository agents with the same **file-derived ID**.
 
 2. Create a user-level agent:
  ```bash
  mkdir -p ~/.copilot/agents
+ test ! -e "$HOME/.copilot/agents/security-reviewer.agent.md" &&
  cat > ~/.copilot/agents/security-reviewer.agent.md << 'EOF'
  ---
  name: security-reviewer
@@ -572,9 +591,11 @@ Agent performs analysis without modification capabilities.
 
 4. Priority order (highest to lowest):
  - **User agents** (`~/.copilot/agents/`) — highest priority
- - Enterprise agents (`.github-private` repo, enterprise level)
- - Organization agents (`.github-private` repo, org level)
- - **Repository agents** (`.github/agents/` or `.claude/agents/`)
+ - Project `.github/agents/` (deepest first)
+ - Project `.claude/agents/` (deepest first)
+ - Added-root `.github/agents/`
+ - Plugin agents
+ - Remote organization/enterprise agents
 
 > **Note:** Enterprise and organization-level agents are configured by admins in a `.github-private` repository. See the [GitHub Docs](https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-for-organization/prepare-for-custom-agents) for details.
 
@@ -601,6 +622,7 @@ You understand how to deploy user-level agents and the priority hierarchy.
  ---
  name: project-lead
  description: Coordinates development tasks by delegating to specialized agents. Use for complex features requiring multiple types of work.
+ include-custom-instructions: true
  ---
 
  # Project Lead Agent
@@ -694,11 +716,11 @@ Complex workflows coordinated across multiple agents.
  | Wrong behavior | Check YAML frontmatter syntax |
  | Tools not working | Verify tools list in frontmatter |
  | Description missing | Add description field |
- | Agent not loading | Restart the CLI after creating/editing `.agent.md` files (plugin-installed agents load immediately) |
+ | Agent not loading | Check `/agent` and `/env`, then restart; live activation is not assumed |
 
-4. Validate YAML frontmatter:
+4. Preview YAML frontmatter (this is not parser validation):
  ```bash
- # Check for syntax errors
+ # Inspect the opening frontmatter
  cat .github/agents/test-agent.agent.md | head -20
  ```
 
@@ -716,8 +738,8 @@ You can diagnose and fix agent configuration issues.
 
 ```yaml
 ---
-name: lowercase-hyphenated # Required, max 64 chars
-description: What this agent does # Required, max 1024 chars
+name: lowercase-hyphenated # Optional display name; defaults to file-derived ID
+description: What this agent does # Required
 ---
 ```
 
@@ -739,9 +761,9 @@ skills: # Optional: eagerly load named skills
 ---
 ```
 
-> **Note:** Unknown frontmatter fields produce a warning instead of blocking agent load, making agents more forward-compatible.
+> **Note:** Unrecognized frontmatter can be ignored without a visible warning and without blocking agent load. Verify effective tool, model-policy, and effort settings rather than treating successful loading as schema validation.
 >
-> **Note:** Agents are model-aware — when asked which model is powering them, they can respond accurately.
+> **Note:** Agent self-report is not proof of the actual dispatch model; inspect session/task UI and available diagnostics.
 
 ### Agent Locations
 
@@ -752,13 +774,13 @@ skills: # Optional: eagerly load named skills
 | Organization | All org repos | `.github-private/agents/name.agent.md` |
 | Enterprise | All enterprise repos | Same as org, enterprise level |
 
-> **Note:** User-level agents override repository-level agents with the same name.
+> **Note:** User agents override same-ID project agents; display names do not deduplicate profiles.
 
 ### Naming Conventions
 
 - Use lowercase with hyphens: `test-agent`, `docs-writer`
 - Be descriptive: `security-reviewer` not `sr`
-- Maximum 64 characters
+- Keep IDs short and descriptive; do not apply skill-specific name limits to agent fields
 
 ## Summary
 
@@ -766,17 +788,17 @@ skills: # Optional: eagerly load named skills
 - ✅ Create agents via `/agent` command or manually in `.github/agents/` or `.claude/agents/`
 - ✅ Invoke agents via `/agent` slash command, explicit instruction, inference, or `--agent` flag
 - ✅ User-level agents (`~/.copilot/agents/`) override repo-level agents
-- ✅ Built-in agents (Explore, Task, General-purpose, Code-review, Rubber-duck) handle common tasks automatically
+- ✅ Built-in specialists handle common tasks when dispatched; inspect `/tasks` and use advertised slash commands
 - ✅ Research and Security-review run from `/research` and `/security-review`; REM consolidates memory in the background
 - ✅ Plan and fleet are session modes, not agents
-- ✅ Explore agent has read-only access to GitHub MCP server tools
-- ✅ Agent `model` field overrides the default AI model
+- ✅ Explore uses separate context; actual GitHub tool access requires inventory/runtime checks
+- ✅ Agent model preferences interact with Auto routing, account access, model policy, and per-subagent overrides
 - ✅ Tool restrictions limit what agents can do
 - ✅ Organization agents provide team-wide standards
 - ✅ Agents can delegate to other agents for complex workflows
-- ✅ Restart the CLI after creating new `.agent.md` files (plugin-installed agents hot-load without restart)
+- ✅ Check agent visibility after editing/installing; restart when needed, and validate live loading separately
 - ✅ `/agent`, `/mcp`, `/skills`, `/plugin`, and `/settings` manage configuration from inside a session
-- ✅ Agent `model` field accepts display names and vendor suffixes
+- ✅ Agent `model` field accepts model identifiers and display names; inspect availability and actual dispatch
 - ✅ Agent `skills` field eagerly loads named skills
 - ✅ `subagents.maxDepth` and `subagents.maxConcurrency` bound sub-agent recursion and parallelism
 - ✅ User settings belong in `~/.copilot/settings.json`; `~/.copilot/config.json` is managed automatically and holds credentials
@@ -787,8 +809,8 @@ skills: # Optional: eagerly load named skills
 
 ## References
 
-- [About Custom Agents - GitHub Docs](https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-custom-agents)
+- [About Custom Agents - GitHub Docs](https://docs.github.com/en/copilot/concepts/customizations/custom-agents)
 - [Create Custom Agents for CLI - GitHub Docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/create-custom-agents-for-cli)
 - [Custom Agents Configuration - GitHub Docs](https://docs.github.com/en/copilot/reference/custom-agents-configuration)
-- [Comparing CLI Customization Features - GitHub Docs](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/comparing-cli-features)
+- [Comparing CLI Customization Features - GitHub Docs](https://docs.github.com/en/copilot/concepts/customizations/comparing-customizations)
 - [How to Write Great AGENTS.md](https://github.blog/ai-and-ml/github-copilot/how-to-write-a-great-agents-md-lessons-from-over-2500-repositories/)

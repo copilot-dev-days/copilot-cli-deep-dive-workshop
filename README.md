@@ -1,9 +1,9 @@
 # GitHub Copilot CLI — Deep-Dive Workshop
 
-[![Copilot CLI version](https://img.shields.io/badge/Copilot%20CLI-v1.0.92-blue?logo=github)](https://github.com/github/copilot-cli/releases/tag/v1.0.92)
+[![Copilot CLI version](https://img.shields.io/badge/Copilot%20CLI-v1.0.106--6-blue?logo=github)](https://github.com/github/copilot-cli)
 [![APS version](https://img.shields.io/badge/APS-v1.2.1-blue?logo=github)](https://github.com/chris-buckley/agnostic-prompt-standard/releases/tag/v1.2.1)
 
-A **half-day, instructor-led** workshop that takes teams from first install to advanced automation with GitHub Copilot CLI. Covers operating modes, custom instructions, MCP servers, agent skills, plugins, custom agents, hooks, context management, and more — all through hands-on exercises validated against **Copilot CLI v1.0.92**.
+A **half-day, instructor-led** workshop that takes teams from first install to advanced automation with GitHub Copilot CLI. Covers operating modes, custom instructions, MCP servers, agent skills, plugins, custom agents, hooks, context management, and more — all through hands-on exercises validated against **Copilot CLI v1.0.106-6**.
 
 ## What's Inside
 
@@ -11,7 +11,7 @@ A **half-day, instructor-led** workshop that takes teams from first install to a
 |-----------|------|-------------|
 | **Workshop modules** | [`docs/workshop/`](docs/workshop/00-index.md) | 13 progressive modules (~4.5 h total) from installation to fleet command |
 | **Presentation slides** | [`docs/slides/`](docs/slides/) | Marp-powered slide decks, one per module — ready for live delivery |
-| **Tryout sandbox** | [`tryout/`](tryout/) | Scratch space for hands-on exercises (`.gitignored` — your work stays local) |
+| **Tryout sandbox** | `tryout/` (see [Docker setup](#alternative-run-in-docker)) | Scratch space for hands-on exercises (`.gitignored` — your work stays local) |
 | **Dev Container** | [`.devcontainer/`](.devcontainer/) | One-click reproducible environment with all prerequisites pre-installed |
 | **Responsible AI guide** | [`docs/responsible-ai.md`](docs/responsible-ai.md) | Detailed guidance on applying Microsoft's Responsible AI principles |
 
@@ -53,6 +53,8 @@ after changing them. If a variable is not set, the Dev Container uses the corres
 public npm, PyPI, or NuGet registry.
 
 > This is the recommended approach — it avoids polluting your host machine and ensures a consistent environment for all participants.
+
+The VS Code Dev Container and the standalone workshop runner are separate environments. The runner uses a container named `copilot-workshop` with `tryout/` mounted at `/workspace`; it does not execute exercises inside the Dev Container.
 
 ### Alternative: Run Directly on Host
 

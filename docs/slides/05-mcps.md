@@ -126,8 +126,9 @@ Optional: `"tools": ["*"]` (default), `"env": {}`, `"headers": {}`
 > Server names support npm-style identifiers like `@modelcontextprotocol/server`.
 > Workspace config can live in `.mcp.json` or `.github/mcp.json`; `COPILOT_HOME` moves user config.
 
-Only environment variables referenced by `command`, `args`, or `cwd` inherit
-from the shell; declare every other server variable explicitly in `env`.
+Shell variables can expand in `command`, `args`, and `cwd`; declare required
+variables explicitly in `env` for reproducibility. This is not an environment
+allow-list: sanitize the launching environment to isolate local server processes.
 
 ---
 
@@ -154,7 +155,7 @@ Copilot uses GitHub MCP tools automatically
 - Timeline entries summarize each MCP tool name and parameters
 - MCP sampling requests (server-requested LLM inference) require user approval
 
-> It appears in the in-session `/mcp` view, not in `copilot mcp list`
+> Both `/mcp` and `copilot mcp list` include builtin sources: `github-mcp-server`.
 
 ---
 
@@ -162,14 +163,20 @@ Copilot uses GitHub MCP tools automatically
 
 | Server | Package / URL | What it does |
 |--------|---------------|-------------|
-| Exa | `https://mcp.exa.ai/mcp` (remote) | Web search, code search |
-| Memory | `server-memory` | Remember things across sessions |
+| Exa | `https://mcp.exa.ai/mcp` (remote) | Web search, page fetch; discover optional tools |
+| Memory | `server-memory` | Persist across sessions with a stable graph file |
 | Filesystem | `server-filesystem` | Structured file access |
-| PostgreSQL | `server-postgres` | Query databases |
-| Slack | `@modelcontextprotocol/server-slack` | Team messages and search |
-| Brave Search | `@anthropic/mcp-server-brave-search` | Web search |
+| PostgreSQL | **Removal candidate:** `server-postgres` | Not supported; no fixture |
+| Slack | **Removal candidate:** `@modelcontextprotocol/server-slack` | Not supported |
+| Brave Search | **Removal candidate:** `@anthropic/mcp-server-brave-search` | Nonexistent; use Exa exercise |
 
 Full list: [github.com/modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers)
+
+Set memory's `env.MEMORY_FILE_PATH` to an absolute disposable workspace path.
+Install local prerequisites with `npm install --ignore-scripts --no-save --package-lock=false`.
+Session-only configuration does not imply session-only data; verify create/search
+calls and retrieval after restarting with the same file.
+Exa code-search/company-research tools are not guaranteed by the default endpoint.
 
 ---
 
@@ -179,7 +186,7 @@ Use shell commands or the interactive `/mcp` view:
 
 | Command | Action |
 |---------|--------|
-| `copilot mcp list` | List configured servers (built-ins not shown) |
+| `copilot mcp list` | List user/workspace/plugin/builtin sources |
 | `copilot mcp get NAME` | View server details |
 | `copilot mcp add NAME -- COMMAND` | Add local stdio server |
 | `copilot mcp add --transport http NAME URL` | Add remote HTTP server |
@@ -188,6 +195,14 @@ Use shell commands or the interactive `/mcp` view:
 
 > Use `--additional-mcp-config @file.json` for session-only servers.
 > `mcp add` also supports `--env`, `--header`, `--timeout`, `--tools`, `--json`, and `--show-secrets`.
+
+Use `add` to preserve unrelated entries, or dedicated session config files.
+Verify temporary config with `/mcp` in **that session**, not another process.
+Raw JSON can expose env/header credentials; select fields and never show secrets.
+List JSON wraps entries in `.mcpServers`; get JSON is keyed by server name.
+Use `to_entries` to derive names rather than assuming a flat array/object.
+The management exercise registers `workshop-memory` persistently; it removes only
+the disposable Context7 entry before inspecting `workshop-memory` interactively.
 
 ---
 
@@ -206,13 +221,19 @@ The interactive view also takes subcommands:
 | `/mcp auth <name>` | Authenticate with a remote server |
 | `/mcp search [query]` | Search the MCP registry |
 
+Registry search needs `--experimental` or `/experimental on`.
+Prompts, resources, and resource templates are server-dependent; verify actual
+list/read results, including empty lists and unsupported methods.
+Server-side resource support does not guarantee a resource API is exposed to
+the model; distinguish MCP-client resource reads from Copilot tool calls.
+
 ---
 
 ## GitHub MCP Server Controls
 
 ```bash
-# Add specific tools/toolsets
-copilot --add-github-mcp-tool "create_issue"
+# Explicit tools and toolsets replace the default subset
+copilot --add-github-mcp-tool "issue_write"
 copilot --add-github-mcp-toolset "repos"
 
 # Enable ALL GitHub MCP tools
@@ -225,6 +246,15 @@ copilot --disable-mcp-server "my-server"
 # Re-enable a disabled server for this run only
 copilot --enable-mcp-server "my-server"
 ```
+
+Permission rules use `github-mcp-server`, not `github`. Inspect actual tools for notifications/issues.
+For issue/PR listing, add `--add-github-mcp-toolset issues` and
+`--add-github-mcp-toolset pull_requests`; default repository reads are not listing tools.
+Without preapproval, `-p` can deny tool calls even with a successful process exit.
+Low-risk tools may prompt or be preapproved; destructive calls require approval or are blocked.
+`mcp enable/disable` persists; launch overrides do not.
+`--mcp-github-auth server=origin` approves a credential destination, never a token argument.
+Broad MCP instruction trust requires review.
 
 ---
 
@@ -260,6 +290,6 @@ Open **Module 5** in `docs/workshop/05-mcps.md`
 - **Exercise 4** — File system MCP
 - **Exercise 5** — MCP management commands
 - **Exercise 6** — MCP tools with permissions
-- **Exercise 7** — Temporary MCP config
+- **Exercise 7** — Temporary MCP config, verified in the same process
 
 ⏱️ You have **~12 minutes**

@@ -61,6 +61,11 @@ style: |
 
 ## Topics Overview
 
+> Local-only validation: append `--sync-session=off` to every session launch,
+> including TTY, resumed, fleet, autopilot, and ACP. History sync defaults on.
+> Use disposable fixtures, 60–90 second timeouts, and bounded continuations.
+> Do not run remote/Gist examples or `/chronicle reindex` in a no-upload exercise.
+
 | Topic | What you'll learn |
 |-------|------------------|
 | **Autopilot** | Autonomous multi-step execution |
@@ -76,7 +81,7 @@ style: |
 
 ## Autopilot Mode
 
-**Autonomous execution** — Copilot works through multi-step tasks without asking
+**Autonomous continuation** — permissions still apply; it does not grant every tool.
 
 ```bash
 copilot --autopilot -p "Create an Express API with auth, tests, and docs"
@@ -86,6 +91,9 @@ copilot --autopilot --max-autopilot-continues 10
 
 # Fully autonomous — no questions
 copilot --autopilot --no-ask-user --allow-all-tools
+
+copilot --plan --mode autopilot --max-autopilot-continues 3 \
+  -p "Plan and implement a focused test improvement" --allow-tool write
 ```
 
 Or cycle modes mid-session with `Shift+Tab`:
@@ -124,6 +132,10 @@ Your Prompt → Orchestrator
 > Orchestrator validates sub-agent work and runs a **bounded multiple** of
 > subagents concurrently; settings and account limits cap parallelism.
 
+Launch directly: `copilot --fleet -i "Add tests for independent modules"`.
+Custom specialists need `include-custom-instructions: true` for repo guidance.
+Models/policies/Auto affect dispatch; inspect actual tasks.
+
 ---
 
 ## PRs, Background Agents & Experiments
@@ -133,15 +145,15 @@ Your Prompt → Orchestrator
 - Background tasks appear in the timeline with expandable notifications
 - `write_agent` continues a multi-turn conversation; `read_agent` includes the
   inbound messages that triggered each turn
-- Background agents receive human-readable task IDs
+- Background agents have readable names; follow-ups use the returned `agent_id`
 - `/experimental on|off` restarts the CLI automatically to apply the change
 
 ---
 
 ## Monorepos & Monitoring
 
-- Instructions, MCP servers, skills, and agents are discovered from the working
-  directory up to the git root — including nested monorepo levels
+- Discovery is resource-specific; project agents/MCP walk cwd to root;
+  instructions also use relevant nested paths, with modular exceptions
 - `copilot help monitoring` documents OpenTelemetry exporters and attributes
 - Monitoring includes internal subagent spans and `time_to_first_chunk` latency
 
@@ -163,28 +175,35 @@ changing personal MCP configuration.
 - Startup shows environment loading progress
 - Narrow terminals switch the footer to a responsive two-line layout
 - Independent tool calls execute in parallel automatically
-- `copilot --help` keeps flags sorted and includes descriptions and examples
+- `copilot --help` supplies descriptions and examples; workshop tables are selected controls
 
 ---
 
 ## CI/CD Integration
 
 ```yaml
-# .github/workflows/copilot-review.yml
-- name: Run Code Review
- env:
- COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
- run: |
- copilot -p "Review PR changes" \
- --allow-tool 'shell(git:*)' \
- --deny-tool 'write' \
- --usage-output-file ./copilot-usage.json \
- --silent
+# Steps excerpt — trusted PRs only; see full workflow in Module 12
+- uses: actions/checkout@main
+  with:
+    ref: ${{ github.event.pull_request.head.sha }}
+    fetch-depth: 0
+- name: Review supplied diff
+  env:
+    COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
+    BASE_SHA: ${{ github.event.pull_request.base.sha }}
+  run: |
+    git diff "$BASE_SHA" HEAD | copilot -p "Review this diff only" \
+      --available-tools 'view,grep,glob' --deny-tool shell --deny-tool write \
+      --no-custom-instructions --disable-builtin-mcps --silent
 ```
 
 Key flags for automation: `--silent`, `--allow-tool`, `--deny-tool`, `--usage-output-file`
 
-> `shell(git:*)` matches every git subcommand — `shell(git)` alone does not
+For npm scripts, `--allow-tool 'shell(npm run:*)'` matches the command stem;
+it approves all `npm run` scripts, so review them first.
+
+> Pin Actions to an approved immutable commit in your workflow.
+> `write` denial does not cover shell writes; exclude shell for read/search analysis.
 
 ---
 
@@ -204,6 +223,8 @@ copilot --excluded-tools 'create,edit,web_fetch'
 ---
 
 ## Environment & Configuration
+
+Precedence is key-specific; `COPILOT_HOME` selects storage and managed policy can constrain overrides.
 
 | File | Purpose |
 |------|---------|
@@ -229,6 +250,8 @@ export GITHUB_TOKEN="github_pat_..." # lowest priority
 export COPILOT_GH_HOST="github.example.com" # CLI-specific GitHub host
 ```
 
+Codespaces' auto-injected `GITHUB_TOKEN` does not override `/login`; explicit exports do.
+
 ---
 
 ## BYOK & Offline Mode
@@ -246,9 +269,18 @@ COPILOT_PROVIDER_BASE_URL=http://localhost:11434/v1 \
 
 > `copilot help providers` documents Azure, Anthropic, and OpenAI-compatible providers
 
+`COPILOT_PROVIDER_API_KEY_COMMAND` obtains fresh keys; `COPILOT_PROVIDER_VISION=true`
+requires a capable model. Named `providers.json` is optional and credential-bearing.
+
 ---
 
 ## Additional Runtime Controls
+
+`--version` checks the binary, not authentication. Authenticate before scripted requests.
+For `--bash-env`, use the same `~/.copilot_env` created in Exercise 6.
+Test direct `!` shell access separately: it can use `/bin/sh` without sourcing
+the file. Explicitly use Bash and source the reviewed `~/.copilot_env` if needed;
+Bash-specific function names are not portable. Do not run the commit helper.
 
 ```bash
 copilot --no-bash-env                  # do not source BASH_ENV
@@ -280,6 +312,8 @@ None run by default — define them explicitly
 
 `~/.copilot/lsp-config.json` (personal) · `.github/lsp.json` (project)
 
+Use the module's explicit merge procedure; preserve unrelated entries.
+
 ```
 /lsp show        # configured servers
 /lsp test NAME   # does it start?
@@ -287,14 +321,21 @@ None run by default — define them explicitly
 /lsp logs        # live status + server logs
 ```
 
+Verify a real definition/reference request, not just startup. An immediate-exit
+test failure remains a diagnostic failure even if the services panel says ready.
+
 ---
 
 ## Help Topics & Session Limits
 
 ```bash
-copilot help billing | commands | config | environment | limits
-copilot help logging | monitoring | permissions | providers | sandbox
+copilot help billing
+copilot help config
+copilot help monitoring
+copilot help sandbox
 ```
+
+Other topics: `commands`, `environment`, `limits`, `logging`, `permissions`, `providers`.
 
 **Session limits are opt-in** — a soft cap on AI credits
 
@@ -318,11 +359,26 @@ copilot --max-ai-credits 30        # minimum is 30
 # Add to ~/.bashrc or ~/.zshrc
 
 alias cop='copilot'
-alias cop-analyze='copilot --deny-tool write'
+alias cop-analyze='copilot --available-tools "view,grep,glob" --deny-tool shell --deny-tool write'
 alias cop-safe='copilot --allow-tool "shell(cat)" --allow-tool "shell(grep)" --deny-tool write'
 alias cop-yolo='copilot --yolo'
 alias cop-resume='copilot --continue'
 ```
+
+`cop-safe` is restricted guidance, not a filesystem read-only boundary.
+
+---
+
+## Trust, Sandbox, and Sync
+
+- `--trust-folder` admits cwd config for one new prompt-mode run, not all permissions
+- Exact `COPILOT_ALLOW_ALL=true` also trusts executable cwd configuration
+- `/sandbox enable` / `--sandbox`: available without experimental mode
+- Linux needs namespaces/network helpers beyond `bwrap`; Docker alone is not proof
+- Credential masking: approved-host HTTPS headers; bypass exposes host credentials
+- `--sync-session=on|off`: read-only history; `/remote off`: stop live control
+- **Removal candidates:** `--remote-export`, `--no-remote` are rejected; do not run
+- `--host-environment` / `--host-compute-id`: optional hosted-execution reference
 
 ---
 
@@ -331,6 +387,7 @@ alias cop-resume='copilot --continue'
 - Commit shared guidance in `.github/copilot-instructions.md`
 - Layer directory-specific rules with `AGENTS.md` and `.github/instructions/`
 - Share instructions, skills, agents, hooks, MCP, and LSP config with the repo
+- Shared MCP: `mcpServers`, explicit `type`, top-level `headers`; `servers`/`requestInit` is an inactive removal candidate
 - Use least-privilege rules and policy-approved marketplaces
 - Standardize CI prompts and save usage output for auditability
 
@@ -350,10 +407,14 @@ alias cop-resume='copilot --continue'
 /chronicle tips       # personalized usage tips
 /chronicle cost-tips  # reduce token usage and cost
 /chronicle improve    # improve copilot-instructions.md
-/chronicle reindex    # reload the session store index
+/chronicle reindex    # rebuild local store AND sync to account; not for no-upload runs
 ```
 
 > ⚠️ `/chronicle` is experimental — subcommands may change
+
+Research report export: `/share file research ./research-report.md`.
+Read/search-only tools can produce findings but fail to create the report.
+A zero-row history search is not proof of retrieval; do not enable sync to fix it.
 
 ---
 
@@ -364,11 +425,11 @@ Open **Module 12** in `docs/workshop/12-advanced.md`
 **Start from Exercise 1** and work through as many as you can
 
 - **Exercise 1** — Environment variables
-- **Exercise 2** — CI/CD integration
+- **Exercise 2** — CI checkout, explicit PR base, trusted code, read/search review
 - **Exercise 3** — Advanced CLI flags
 - **Exercise 4–5** — Autopilot mode & fleet command
 - **Exercise 6** — Shell config & `--bash-env`
-- **Exercise 7** — Language server configuration
+- **Exercise 7** — Merge language server config and verify startup
 - **Exercise 8–10** — Settings, troubleshooting & team workflows
 - **Exercise 11** — Performance optimization
 - **Exercise 12** — `/research` deep research & `/chronicle` insights

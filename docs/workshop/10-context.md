@@ -88,6 +88,8 @@ Review @~/company-standards/coding-guidelines.md and apply to this project
 
 This is especially useful for referencing shared configuration, documentation, or libraries outside the current repository.
 
+File mentions do not grant access. Outside the allowed directories, approve the read interactively or add the specific directory with `/add-dir` (or `--add-dir` at launch). An unattended `-p` request can be denied when no one is available to approve it.
+
 ### Referencing GitHub Issues, PRs & Discussions with `#`
 
 Similar to `@` for files, you can type `#` followed by a number to pull a GitHub issue, pull request, or discussion directly into context:
@@ -103,7 +105,13 @@ When you type `#`, matching issues and PRs from the current repository are displ
 
 ### Auto-Compaction
 
-When context reaches ~95% capacity, Copilot automatically compresses history in the background without interrupting your workflow.
+Background compaction starts at approximately **80%** capacity. If usage reaches approximately **95%** before it finishes, the CLI can pause to wait. Thresholds depend on configuration; compaction summarizes, not securely erases, history.
+
+### Routing, Retrieval, and Large Results
+
+With model `auto`, `--auto-tier` selects an advertised profile such as `efficiency`, `balance`, or `intelligence`; `COPILOT_AUTO_TIER` and `autoTier` also configure routing. Actual model/catalog availability depends on your account. `--dynamic-retrieval skills=on|off` persists skill-retrieval preference, so not every skill's metadata necessarily enters the parent context.
+
+Large tool results can spill to a temporary file with a preview/path rather than enter context in full. `COPILOT_LARGE_OUTPUT_THRESHOLD_BYTES` controls the threshold; increasing it leaves less conversation headroom. File previews/summaries still cost context, and spilled files may hold sensitive data.
 
 ## Hands-On Exercises
 
@@ -123,7 +131,7 @@ When context reaches ~95% capacity, Copilot automatically compresses history in 
  /context
  ```
 
- You'll see a visual overview of your current token usage.
+ Before the first message, `/context` can report that context information is not yet available. Send a short message, then run `/context` again to see the visual overview of your current token usage.
 
 3. Check session stats with `/usage`:
  ```
@@ -224,7 +232,7 @@ Context reduced while preserving important information.
  Read all the files in the src directory and tell me what each one does
  ```
 
- This loads all files into context at once.
+ This can cause broad reading and high context use, but tool selection is model-dependent and large output may spill. Inspect actual tool calls rather than assuming every file is loaded.
 
 2. Check context:
  ```
@@ -249,6 +257,8 @@ Context reduced while preserving important information.
  /context
  ```
 
+ Compare actual readings and tool calls, not just prompt length. A selective request does not guarantee a lower token total: model/tool overhead, permission retries, and the requested files can outweigh savings in a small project.
+
 5. **Best practices for efficient context:**
  - Load files on-demand, not all at once
  - Use specific queries instead of broad exploration
@@ -272,8 +282,7 @@ You can manage context efficiently.
  Give me an overview of this codebase structure
  ```
 
- Copilot delegates to the Explore agent automatically, which doesn't pollute main context.
- it can also use GitHub MCP tools when available.
+ Copilot may delegate to Explore, which has separate context and reduces parent-context pressure. Its returned summary still enters parent context and consumes usage. Inspect `/tasks` and `/context`; GitHub tool availability depends on the loaded inventory.
 
 2. **Focus on specific areas:**
  ```
@@ -303,7 +312,7 @@ You can manage context efficiently.
  In src/db/connection.ts, how is the connection pool configured?
  ```
 
- Copilot reads only what's needed.
+ Substitute an existing database file from your project for `src/db/connection.ts`. A focused prompt encourages selective reading; inspect actual tools to see what it reads.
 
 **Expected Outcome:**
 Large codebases manageable without hitting limits.
@@ -325,6 +334,8 @@ Large codebases manageable without hitting limits.
  Select a model with larger context if available.
 
 2. **Use specific instructions:**
+
+ The filenames and function names below are illustrative. Substitute existing files and symbols in your project for `payment.ts`, `auth.ts`, and their example functions.
 
  Instead of:
  ```
@@ -369,14 +380,17 @@ Maximum utility from available context.
 
 **Goal:** See auto-compaction in action.
 
+> [!NOTE]
+> Keep this practice bounded: request short answers and stop after the prompts below. Do not deliberately exhaust a large context window or test billing limits. If auto-compaction does not trigger, record it as not observed; use Exercise 2 to demonstrate compaction and continuity safely.
+
 **Steps:**
 
-1. Start a session and fill context deliberately:
+1. Start a session for bounded observation:
  ```bash
  copilot
  ```
 
-2. Generate lots of content:
+2. Try these prompts, appending “Keep the answer under 150 words” to each:
  ```
  Write a detailed explanation of microservices architecture with examples
  ```
@@ -387,7 +401,7 @@ Maximum utility from available context.
  Compare REST vs GraphQL with code examples for both
  ```
 
-3. Continue until you see auto-compaction trigger:
+3. Try one final bounded prompt, then stop whether or not auto-compaction triggers:
  ```
  Explain the CQRS pattern with implementation details
  ```
@@ -405,7 +419,7 @@ Maximum utility from available context.
  ```
 
 **Expected Outcome:**
-Auto-compaction preserves session continuity.
+If auto-compaction triggers, check whether session continuity is preserved. Otherwise, record it as not observed rather than forcing context exhaustion.
 
 ### Exercise 7: Context-Aware Workflow
 
@@ -467,10 +481,10 @@ Systematic workflow keeps context under control.
 | `/context` | Show visual overview of token usage |
 | `/usage` | Show session stats (requests, duration, lines edited, token usage per model) |
 | `/compact` | Compress session history |
-| `/clear` | Abandon session and start fresh (session is discarded) |
+| `/clear` | Abandon active conversation and start fresh; not transcript/memory/log erasure |
 | `/new` | Start new conversation (old session stays backgrounded) |
 | `/cwd` | Change working directory (affects context scope) |
-| `/add-dir` | Add directory to accessible scope (persists across `/clear` and `/resume`; supports relative paths like `./src`) |
+| `/add-dir` | Add file access and trust that root's skills/agents; relative paths resolve from the current working directory; inspect grants with `/list-dirs` |
 | `@path/to/file` | Include specific file contents in your prompt |
 | `#<number>` | Include a GitHub issue, PR, or discussion in your prompt |
 
@@ -491,7 +505,7 @@ Systematic workflow keeps context under control.
 | `/clear` | Abandoning session entirely |
 | `/new` | Starting new topic but keeping old session accessible |
 | `/compact` | Long session, need to continue |
-| Explore agent | Codebase overview without context cost |
+| Explore agent | Separate context reduces parent pressure; returned summaries and usage still count |
 | `@path/to/file` | Include specific files without broad reads |
 | `#<number>` | Pull issue/PR/discussion context directly |
 | Selective reading | Large files, specific needs |
@@ -522,11 +536,11 @@ Systematic workflow keeps context under control.
 - ✅ Context is limited - monitor with `/context` and `/usage`
 - ✅ `/compact` compresses while preserving key info
 - ✅ `/clear` abandons the session; `/new` starts fresh while keeping the old session backgrounded
-- ✅ Auto-compaction triggers at ~95% capacity
+- ✅ Background compaction begins around 80%; near 95% the CLI may wait for it to finish
 - ✅ Use `@path/to/file` to include specific files in prompts
 - ✅ Use `#<number>` to pull GitHub issues, PRs, or discussions into context
 - ✅ Efficient prompting extends useful session length
-- ✅ Explore agent preserves main context
+- ✅ Explore reduces parent-context pressure, not context/usage cost to zero
 - ✅ `@` file mentions support absolute, home, and parent paths
 - ✅ `--context` flag and the `contextTier` setting in `~/.copilot/settings.json` select the context window tier for eligible models
 - ✅ Reasoning token usage shown in per-model breakdown via `/usage`
@@ -537,4 +551,4 @@ Systematic workflow keeps context under control.
 
 ## References
 
-- [Use Copilot CLI - GitHub Docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli#context-management)
+- [Managing context for GitHub Copilot - GitHub Docs](https://docs.github.com/en/copilot/concepts/prompting-and-context/context-management)

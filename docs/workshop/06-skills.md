@@ -22,7 +22,7 @@ Skills are specialized capabilities that:
 - Work across multiple AI agents (Copilot CLI, VS Code, coding agent)
 - Reduce repetition - create once, use everywhere
 - Load progressively - only relevant content enters context
-- Can be shared publicly via agentskills.io
+- Use the open format documented at agentskills.io and can be shared as complete skill directories
 
 ### Skills vs Instructions vs Agents
 
@@ -36,10 +36,12 @@ Skills are specialized capabilities that:
 ### Skill Discovery Levels
 
 ```
-Level 1: Discovery → Copilot reads name/description (always)
+Level 1: Discovery → Copilot uses name/description or dynamically retrieves relevant skills
 Level 2: Instructions → Copilot loads SKILL.md body (when relevant)
 Level 3: Resources → Copilot accesses supporting files (as needed)
 ```
+
+`--dynamic-retrieval skills=on|off` controls embeddings-based skill retrieval and **persists** the choice. Do not assume every skill's metadata always enters context; inspect `/skills` and actual skill-loading calls.
 
 ### Built-in Skills
 
@@ -86,6 +88,8 @@ Skills provided by a plugin or by the built-in set cannot be removed this way �
 Skills are discovered from project directories (`.github/skills/`, `.agents/skills/`, `.claude/skills/`), personal directories (`~/.copilot/skills/`, `~/.agents/skills/`), installed plugins, and custom directories added with `copilot skill add <directory>`.
 
 ## Hands-On Exercises
+
+Paths such as `~/any-project` mean an existing project of your choice. Substitute its actual path before running an example.
 
 ### Exercise 1: Create a Project Skill
 
@@ -173,10 +177,11 @@ Skills are discovered from project directories (`.github/skills/`, `.agents/skil
  Document the API endpoints in this project
  ```
 
-4. Copilot should use the api-docs skill automatically.
+4. Copilot may select the api-docs skill automatically. Verify an actual skill-loading call, not just documentation that resembles its style. If it is not selected, ask: `Use the /api-docs skill to document the API endpoints in this project`.
 
 **Expected Outcome:**
 API documentation generated following your skill's style guide.
+Confirm the skill was loaded; a matching output format alone is not evidence of dispatch.
 
 ### Exercise 2: Create a Testing Skill with Resources
 
@@ -237,7 +242,7 @@ API documentation generated following your skill's style guide.
  mkdir -p .github/skills/test-writer/examples
 
  cat > .github/skills/test-writer/examples/jest.ts << 'EOF'
- import { describe, it, expect, beforeEach } from 'jest';
+ import { describe, it, expect, beforeEach } from '@jest/globals';
  import { MyService } from '../src/my-service';
 
  describe('MyService', () => {
@@ -276,27 +281,24 @@ API documentation generated following your skill's style guide.
 
 
  class TestMyService:
- @pytest.fixture
- def service(self):
- return MyService
+     @pytest.fixture
+     def service(self):
+         return MyService()
 
- def test_method_returns_expected_for_valid_input(self, service):
- # Arrange
- input_value = "valid"
+     def test_method_returns_expected_for_valid_input(self, service):
+         # Arrange
+         input_value = "valid"
+         # Act
+         result = service.method_name(input_value)
+         # Assert
+         assert result == "expected"
 
- # Act
- result = service.method_name(input_value)
-
- # Assert
- assert result == "expected"
-
- def test_method_raises_for_invalid_input(self, service):
- # Arrange
- input_value = None
-
- # Act & Assert
- with pytest.raises(ValueError, match="Invalid input"):
- service.method_name(input_value)
+     def test_method_raises_for_invalid_input(self, service):
+         # Arrange
+         input_value = None
+         # Act & Assert
+         with pytest.raises(ValueError, match="Invalid input"):
+             service.method_name(input_value)
  EOF
  ```
 
@@ -315,6 +317,7 @@ API documentation generated following your skill's style guide.
 
 **Expected Outcome:**
 Skill uses example files to generate framework-appropriate tests.
+Verify that Copilot actually reads the relevant file in `examples/`; loading only `SKILL.md` does not demonstrate resource use. If necessary, explicitly ask it to use `/test-writer` and read `examples/pytest.py` or `examples/jest.ts`.
 
 ### Exercise 3: Create Personal Skills
 
@@ -461,16 +464,19 @@ Personal skills are available in all projects.
  curl -s https://api.github.com/repos/anthropics/skills/contents/skills | jq '.[].name'
  ```
 
-3. Install a skill from the repository into the current project (example: `mcp-builder`):
+3. Review the license and scripts, then copy the **complete** `mcp-builder` directory into the current project. A URL install materializes only `SKILL.md` and omits its required sibling resources:
  ```bash
- copilot skill add --project \
-   https://raw.githubusercontent.com/anthropics/skills/main/skills/mcp-builder/SKILL.md
+ git clone --depth 1 https://github.com/anthropics/skills.git community-skills
+ mkdir -p .github/skills
+ test ! -e .github/skills/mcp-builder &&
+ cp -R community-skills/skills/mcp-builder .github/skills/
  ```
 
-4. Or install to personal skills so it works across all projects:
+4. Or copy the complete directory to personal skills:
  ```bash
- copilot skill add \
-   https://raw.githubusercontent.com/anthropics/skills/main/skills/mcp-builder/SKILL.md
+ mkdir -p "${COPILOT_HOME:-$HOME/.copilot}/skills"
+ test ! -e "${COPILOT_HOME:-$HOME/.copilot}/skills/mcp-builder" &&
+ cp -R community-skills/skills/mcp-builder "${COPILOT_HOME:-$HOME/.copilot}/skills/"
  ```
 
 5. Verify the skill was installed:
@@ -487,7 +493,7 @@ Personal skills are available in all projects.
  ```
 
 > [!TIP]
-> Skills follow the open [Agent Skills](https://agentskills.io/) format and work across multiple AI agents — not just Copilot CLI. Any SKILL.md file from the community can be dropped into `.github/skills/` or `~/.copilot/skills/`.
+> Skills follow the open [Agent Skills](https://agentskills.io/) format. Preserve any required `reference/`, `scripts/`, and license files; single-file URL installation is suitable only for self-contained skills. Example test templates require your own service module and test dependencies.
 
 **Expected Outcome:**
 Community skills enhance your Copilot capabilities.
@@ -513,7 +519,7 @@ Community skills enhance your Copilot capabilities.
 
  # Deployment Assistant
 
- You manage deployments following this project's CI/CD pipeline.
+ You demonstrate deployment workflow using dry-run scripts, not a live deployment. Run all commands from `.github/skills/deploy` relative to the repository root.
 
  ## Environments
  - `development` - Auto-deploy on merge to develop
@@ -526,7 +532,7 @@ Community skills enhance your Copilot capabilities.
  3. Deploy: `./scripts/deploy.sh staging`
 
  ## Scripts
- See `scripts/` directory for deployment scripts.
+ See `scripts/` in this skill directory. First change directory to `.github/skills/deploy`; do not confuse these with repository-root scripts.
 
  ## Pre-deployment Checklist
  - [ ] All tests passing
@@ -552,20 +558,31 @@ Community skills enhance your Copilot capabilities.
  ```bash
  mkdir -p .github/skills/deploy/scripts
 
+ cat > .github/skills/deploy/scripts/test.sh << 'EOF'
+ #!/bin/bash
+ set -eu
+ echo "DRY RUN: tests would run here; no test suite executed"
+ EOF
+
+ cat > .github/skills/deploy/scripts/build.sh << 'EOF'
+ #!/bin/bash
+ set -eu
+ echo "DRY RUN: build would run here; no artifact produced"
+ EOF
+
  cat > .github/skills/deploy/scripts/deploy.sh << 'EOF'
  #!/bin/bash
  ENV=${1:-staging}
- echo "Deploying to $ENV..."
- # Add actual deployment logic
+ echo "DRY RUN: would deploy to $ENV; no remote changes made"
  EOF
 
  cat > .github/skills/deploy/scripts/status.sh << 'EOF'
  #!/bin/bash
  ENV=${1:-staging}
- echo "Deployment status for $ENV: healthy"
+ echo "DRY RUN: status for $ENV is unknown; no environment queried"
  EOF
 
- chmod +x .github/skills/deploy/scripts/deploy.sh .github/skills/deploy/scripts/status.sh
+ chmod +x .github/skills/deploy/scripts/*.sh
  ```
 
 4. Test:
@@ -573,11 +590,13 @@ Community skills enhance your Copilot capabilities.
  copilot
  ```
  ```
- Deploy the current build to staging
+ Using the deploy skill, demonstrate the staging dry run from the skill directory; do not perform a real deployment
  ```
 
+Review the scripts before approving their execution. An unapproved non-interactive `copilot -p` session cannot obtain interactive approval and may deny the shell call; use an interactive approval or narrowly scoped preapproval for these reviewed no-op scripts. Skill loading alone does not grant shell permission.
+
 **Expected Outcome:**
-Skill provides deployment guidance and can reference scripts.
+Skill references all four supplied scripts with an explicit working directory. Output demonstrates a dry run, not test/build/deployment success.
 
 ### Exercise 6: Understanding Skill Auto-Selection
 
@@ -596,13 +615,13 @@ Skill provides deployment guidance and can reference scripts.
  ```
  Write unit tests for a function that validates email addresses
  ```
- Observe: the output should follow AAA pattern (Arrange, Act, Assert) as defined in the test-writer skill.
+ Observe: if the skill loads, the output should follow AAA pattern (Arrange, Act, Assert) as defined in the test-writer skill. Check for an actual skill-loading call.
 
 4. Ask a question that matches the **api-docs** skill:
  ```
  Document a REST endpoint POST /users that creates a new user
  ```
- Observe: the output should follow the OpenAPI/Markdown format from the api-docs skill.
+ Observe: if the skill loads, the output should follow the OpenAPI/Markdown format from the api-docs skill. A familiar format alone does not prove selection.
 
 5. Ask a question that matches the **deploy** skill:
  ```
@@ -610,16 +629,16 @@ Skill provides deployment guidance and can reference scripts.
  ```
  Observe: the output should reference the deployment checklist and scripts from the deploy skill.
 
-6. Explicitly reference a skill by name to ensure it's used:
+6. Explicitly request a skill by its slash-prefixed name, then verify it loads:
  ```
- Using the api-docs skill, generate OpenAPI specs for a todo list API
+ Using the /api-docs skill, generate OpenAPI specs for a todo list API
  ```
 
 > [!TIP]
-> Copilot selects skills by matching your prompt against the `name` and `description` in each SKILL.md frontmatter. Write clear, specific descriptions to improve auto-selection accuracy.
+> Copilot decides whether to select a skill using your prompt and the skill's description; automatic selection is not guaranteed. Write clear, specific descriptions, inspect actual skill-loading calls, and request `/test-writer`, `/api-docs`, or `/deploy` explicitly when needed.
 
 **Expected Outcome:**
-Different prompts trigger different skills, producing output that follows each skill's specific guidelines and format.
+Observe which prompts actually load skills and which do not. Explicit requests provide a fallback; verify both loading and the resulting output against the skill's guidelines.
 
 ## Skill Structure Reference
 
@@ -655,12 +674,14 @@ description: What this skill does and when to use it # Required: max 1024 chars
 license: MIT # Optional: License identifier
 user-invocable: true # Optional: expose the skill as a slash command
 aliases: [alt-name] # Optional: additional slash-command names
-allowed-tools: ["bash", "view"] # Optional: restrict the tools the skill may use
+allowed-tools: ["view"] # Optional: preapprove listed tools while the skill is active; not a restriction
 disable-model-invocation: false # Optional: prevent the model from auto-selecting the skill
 ---
 ```
 
 Only `name` and `description` are required. The shipped built-in skills use `user-invocable: false` so they are selected by the model rather than typed as a slash command.
+
+`allowed-tools` grants permission rather than limiting the agent to those tools. Omit shell preapproval unless you have reviewed and trust the skill and all referenced scripts. Client-specific frontmatter support can differ across agents.
 
 ### Skill Locations
 
@@ -681,7 +702,7 @@ Only `name` and `description` are required. The shipped built-in skills use `use
 - ✅ Project skills in `.github/skills/`, personal in `~/.copilot/skills/`
 - ✅ Include examples and templates for better output quality
 - ✅ Community skills available at [github.com/anthropics/skills](https://github.com/anthropics/skills)
-- ✅ Copilot auto-selects skills based on your request
+- ✅ Copilot can auto-select skills based on your request; verify loading and use `/skill-name` when needed
 - ✅ `copilot skill add` installs skills from files, URLs, or directories
 - ✅ `copilot skill list --json` provides machine-readable skill inventory
 - ✅ Built-in skills `customize-cloud-agent`, `discover-resources`, and `github-pr-media` ship with the CLI and need no configuration
@@ -694,6 +715,7 @@ Only `name` and `description` are required. The shipped built-in skills use `use
 ## References
 
 - [Agent Skills - VS Code Docs](https://code.visualstudio.com/docs/agent-customization/agent-skills)
-- [About Agent Skills - GitHub Docs](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills)
+- [About Agent Skills - GitHub Docs](https://docs.github.com/en/copilot/concepts/customizations/agent-skills)
+- [Adding Agent Skills for Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/create-skills)
 - [Agent Skills Specification](https://agentskills.io/)
 - [Example Skills Repository](https://github.com/anthropics/skills)

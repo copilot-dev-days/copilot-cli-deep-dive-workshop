@@ -8,7 +8,7 @@
 - A **trusted** working folder — repository hooks only run in trusted folders
 
 > [!IMPORTANT]
-> Answer **Yes, and remember** at the trust prompt the first time you launch Copilot in the folder you use for this module. Without folder trust, `.github/hooks/*.json` is discovered but never executed and no error is shown, so every exercise below would silently produce nothing.
+> Admit the folder's configuration using the trust prompt (session-only trust is sufficient). For one new prompt-mode session use `--trust-folder`. Review hooks before admission: they execute code. Exact `COPILOT_ALLOW_ALL=true` also trusts cwd configuration; other accepted truthy spellings only auto-approve tools.
 
 ## Learning Objectives
 
@@ -25,7 +25,7 @@
 Hooks are custom scripts that execute at specific points during Copilot agent execution:
 
 ```
-User Prompt → Session Start → Pre-Tool → Tool Execution → Post-Tool → Session End
+Session admission/start → User prompts → Pre-Tool → Tool execution → Success/failure hooks → Session end
      ↓              ↓            ↓             ↓              ↓            ↓
    Hook           Hook         Hook                        Hook         Hook
 ```
@@ -39,10 +39,10 @@ User Prompt → Session Start → Pre-Tool → Tool Execution → Post-Tool → 
 | `userPromptSubmitted` | User sends prompt | Audit, filtering |
 | `userPromptTransformed` | After a prompt is transformed into its model-facing form, before it enters history | Prompt rewriting, auditing |
 | `preToolUse` | Before tool execution | Permission control, validation |
-| `preMcpToolCall` | Before an MCP tool request is sent | Adjust MCP request metadata |
+| `preMcpToolCall` | **Unverified:** not listed by the public hooks reference | Investigation only; do not configure as a working event without runtime evidence |
 | `postToolUse` | After successful tool execution | Logging, verification |
 | `postToolUseFailure` | After tool execution fails | Error handling, retry logic |
-| `errorOccurred` | A model call fails | Error handling, alerts |
+| `errorOccurred` | Internal errors with model/tool/system/user-input context | Error handling, alerts; tool failures also have `postToolUseFailure` |
 | `preCompact` | Before context compaction | Pre-compaction tasks, state saving |
 | `agentStop` | The agent stops at the end of a turn | Turn-level automation, notifications |
 | `subagentStart` | Sub-agent is spawned | Context injection, logging |
@@ -54,19 +54,19 @@ User Prompt → Session Start → Pre-Tool → Tool Execution → Post-Tool → 
 
 - **Repository hooks**: any `*.json` file in `<git root>/.github/hooks/` (for example `hooks.json`)
 - **Personal hooks**: any `*.json` file in `~/.copilot/hooks/`
-- **Inline hooks**: the `hooks` key, keyed by event name, using the same schema as `.github/hooks/*.json`. In the global `config.json` these act as user-level hooks; in repository `settings.json` they act as repo-level hooks.
+- **Inline hooks**: the `hooks` key in personal `~/.copilot/settings.json` or repository `.github/copilot/settings.json` / `settings.local.json`, not `config.json`. `COPILOT_HOME` relocates personal settings/hooks.
 
 > [!NOTE]
 > `~/.copilot/config.json` is managed automatically by the CLI and holds your authentication token, so do not hand-edit it to add inline hooks. Define your personal hooks as `*.json` files in `~/.copilot/hooks/`, and keep repository inline hooks in the repository's `settings.json` (edit it with `/settings --repo`).
 
 > [!IMPORTANT]
-> Repository hooks run only in **trusted folders**. The first time you launch Copilot in a directory, answer **Yes, and remember** at the trust prompt (or add the path to `trustedFolders`). In an untrusted folder, `.github/hooks/*.json` is discovered but never executed, and no error is shown. Personal hooks in `~/.copilot/hooks/` run regardless of folder trust.
+> Repository hooks require **trusted configuration**; session-only admission is enough. Prefer the trust prompt or `--trust-folder` over editing managed state. Personal hooks and administrator policy hooks have distinct admission rules; policy hooks cannot be disabled locally.
 >
 > Complete this before Exercise 1, or every repository hook in this module will silently do nothing.
 
 ### Disabling All Hooks
 
-> Use the `disableAllHooks` setting to disable all hooks, both user-level and repo-level:
+> In repository `.github/copilot/settings.json`, use `disableAllHooks` to skip non-policy hooks from all sources for that repository:
 
 ```json
 {
@@ -75,6 +75,8 @@ User Prompt → Session Start → Pre-Tool → Tool Execution → Post-Tool → 
 ```
 
 This is useful for debugging or CI environments where hooks may interfere with automation.
+
+Inside one `.github/hooks/*.json` file, the same flag disables only that file's hooks, not hooks in other files.
 
 To suppress specific hooks rather than all of them, list their content-hash keys under `disabledHooks`. Policy-delivered hooks cannot be suppressed and ignore both settings.
 
@@ -88,11 +90,11 @@ Hooks support three permission decisions in `preToolUse`:
 | `deny` | Block the tool with a reason |
 | `ask` | Prompt the user for confirmation before executing |
 
-> The `ask` decision lets hooks request user confirmation instead of silently allowing or denying — useful for semi-automated workflows.
+> The `ask` decision lets hooks request user confirmation instead of silently allowing or denying. Without an interactive approver, including prompt mode and autopilot, it is denied.
 
 ### Cross-Platform Hook Compatibility
 
-> Hook configuration files work across **VS Code, Claude Code, and the CLI** without modification:
+> The CLI accepts cross-tool event aliases and structures, but payloads/output semantics are event-specific; compatibility does not guarantee identical execution:
 > - PascalCase event names are accepted alongside camelCase (e.g., `PreToolUse` and `preToolUse` both work)
 > - Claude Code's nested `matcher/hooks` structure is supported
 > - The optional `type` field is accepted but not required
@@ -100,38 +102,60 @@ Hooks support three permission decisions in `preToolUse`:
 
 ### Hook Behavior
 
-#### `preToolUse` hooks respect `modifiedArgs`/`updatedInput`/`additionalContext`
+#### `preToolUse` argument mutation and event-specific outputs
 
-> **Note:** `preToolUse` hooks can return `modifiedArgs`, `updatedInput`, and/or `additionalContext` fields in their JSON response. These fields are **respected by the CLI** and modify the tool invocation:
+> The reference defines object-shaped `modifiedArgs` for pre-tool mutation:
 >
 > ```json
 > {
->   "modifiedArgs": "{\"command\": \"ls -la --color=never\"}",
->   "updatedInput": "Modified prompt text",
->   "additionalContext": "Extra context injected by hook"
+>   "modifiedArgs": {"command": "ls -la --color=never"}
 > }
 > ```
 >
-> Return only `permissionDecision`/`permissionDecisionReason` or the fields above — other keys are ignored.
+> Use `permissionDecision`/`permissionDecisionReason` for decisions. Pre-tool `updatedInput` and `additionalContext` are not documented decision fields; retained here only as unsupported examples, not instructions. `additionalContext` belongs to supported events such as `sessionStart`/`postToolUse`. An object-shaped `modifiedArgs` from a repository command hook replaces the executed arguments. Check the actual tool output and a harmless disposable side effect: the displayed tool call can still show the original arguments. Preserve other required argument fields in the replacement object.
+>
+> Original inactive fields, **do not use for pre-tool control**:
+> ```text
+> "updatedInput": "Modified prompt text",
+> "additionalContext": "Extra context injected by hook"
+> ```
 
-#### `sessionStart`/`sessionEnd` hooks fire once per session
+#### `sessionStart`/`sessionEnd` are lifecycle hooks, not per-prompt hooks
 
-> **Note:** `sessionStart` and `sessionEnd` hooks fire **once per session**, not once per prompt. They fire exactly once at session start and session end. For per-prompt logic, use the `userPromptSubmitted` hook.
+> In interactive mode, two prompts in the same session share one `sessionStart`; each turn has its own `agentStop`. A trusted resumed session produces another start with `source: resume`. `/clear` ends the old session with `reason: user_exit` while the process remains running; the next prompt starts a new session. `/exit` also produces `user_exit`. Prompt-mode completion produces `reason: complete`; bounded autopilot continuations can produce repeated completion endings. Do not infer turn count from session endings.
+>
+> `--trust-folder` cannot be combined with `--resume`. If trust was session-only, admit the folder again through the interactive resume trust prompt; a successful untrusted prompt-mode resume does not prove repository hooks ran.
 
 ### Hook Payload Shapes
 
-> The payload a hook receives is determined by how you write the event key in the hooks file. The two shapes are mutually exclusive:
+> Most event payload fields follow the event key's casing. Inspect the event-specific schema rather than assuming every field follows one convention:
 >
 > | Event key casing | Payload fields |
 > | --- | --- |
-> | camelCase (`sessionStart`, `preToolUse`) | `sessionId`, `timestamp` (Unix milliseconds), `cwd`, `toolName`, `toolArgs` (JSON **string**), `initialPrompt` |
-> | PascalCase (`SessionStart`, `PreToolUse`) | `hook_event_name`, `session_id`, `timestamp` (ISO 8601 string), `cwd`, `tool_name` (capitalised, e.g. `Bash`), `tool_input` (JSON **object**), `initial_prompt` |
+> | camelCase (`sessionStart`, `preToolUse`) | Event-specific `sessionId`, millisecond `timestamp`, `cwd`; tool events carry `toolName` and `toolArgs` of unknown type |
+> | PascalCase (`SessionStart`, `PreToolUse`) | Event-specific `hook_event_name`, `session_id`, ISO timestamp; tool events carry `tool_name` and `tool_input` |
+>
+> Native `notification` is an exception: it includes camelCase session fields together with `hook_event_name` and `notification_type`. `permissionRequest` uses `toolInput`, not `toolArgs`. Native tool arguments can be objects, JSON-encoded strings, or raw strings such as an `apply_patch` patch; only JSON-encoded strings can be decoded with `fromjson`.
 >
 > Use camelCase keys for hooks written for Copilot CLI; use PascalCase keys when reusing a hooks file authored for VS Code or Claude Code.
 
+### Advanced Hook Formats and Failure Behavior
+
+| Capability | Bounded guidance |
+|---|---|
+| `exec` / `args` command hooks | Direct executable invocation, no shell expansion; do not combine with `bash`/`command` |
+| HTTP hooks | Send payloads to approved HTTPS endpoints; payloads may contain private content, so do not send workshop data to third parties |
+| Prompt hooks | Event-specific model evaluation; consult the reference rather than assuming command-output schemas |
+| `matcher` | Native regex matches the entire tool/event value; PascalCase pre-tool aliases use cross-tool matcher rules |
+| Progress | Emit single-line `{"type":"progress","message":"Checking..."}` then exactly one final decision JSON |
+| Local agent-scoped hooks | Additional hooks while that agent is selected; remote definitions do not execute them |
+| `agentStop` / `subagentStop` | `decision: block` plus `reason` requests continuation; self-limit using `stop_hook_active`, with a bounded runtime guard |
+
+Command `preToolUse` errors/nonzero exits deny (fail-closed), **but timeouts are fail-open**, including policy-hook timeouts. HTTP pre-tool network errors/timeouts/non-2xx responses are fail-open and fall through to normal permissions. Other event failures are generally logged/skipped. `ask` cannot show a confirmation in autopilot and is denied. Hooks are not a complete security boundary.
+
 ### Hook Script Environment
 
-> Hook and plugin scripts receive:
+> Plugin-packaged hooks use plugin-specific paths; do not assume ordinary repository hooks have a plugin installation/data directory. The plugin environment includes these path names:
 > - `PLUGIN_ROOT`, `COPILOT_PLUGIN_ROOT`, `CLAUDE_PLUGIN_ROOT` — the plugin's installation directory
 > - `COPILOT_PLUGIN_DATA`, `CLAUDE_PLUGIN_DATA`, `PLUGIN_DATA` — the plugin's writable data directory
 > - `COPILOT_PROJECT_DIR`, `CLAUDE_PROJECT_DIR` — the project root
@@ -144,7 +168,7 @@ Hooks support three permission decisions in `preToolUse`:
 > - **Shell completion** — when a background shell command finishes
 > - **Permission prompts** — when the agent requests tool permission
 > - **Elicitation** — when the agent asks the user a question
-> - **Agent completion** — when a sub-agent finishes its task
+> - **Agent completion** — when a background sub-agent finishes its task
 >
 > Use this hook to integrate with desktop notifications, Slack, or other alerting systems:
 >
@@ -154,7 +178,7 @@ Hooks support three permission decisions in `preToolUse`:
 >     "notification": [
 >       {
 >         "type": "command",
->         "bash": "INPUT=$(cat); TYPE=$(echo \"$INPUT\" | jq -r '.notificationType'); echo \"Copilot: $TYPE\" | notify-send -",
+>       "bash": "INPUT=$(cat); TYPE=$(echo \"$INPUT\" | jq -r '.notification_type'); notify-send \"Copilot: $TYPE\"",
 >         "cwd": ".",
 >         "timeoutSec": 5
 >       }
@@ -164,6 +188,8 @@ Hooks support three permission decisions in `preToolUse`:
 > ```
 
 ## Hands-On Exercises
+
+Use a disposable repository. Each exercise writes its own hook file so unrelated configuration survives. Repeated lifecycle entries in retained examples can produce duplicate log lines when all files are enabled; for isolated output, move earlier exercise files to a non-`.json` suffix and restore them afterward. Never overwrite existing hook files. Logs contain prompt/error content: use only synthetic data, restrict access, and do not share them raw.
 
 ### Exercise 1: Create a Basic Hooks Configuration
 
@@ -189,7 +215,8 @@ Hooks support three permission decisions in `preToolUse`:
 
 3. Create the hooks configuration file:
    ```bash
-   cat > .github/hooks/hooks.json << 'EOF'
+   test ! -e .github/hooks/workshop-01.json &&
+   cat > .github/hooks/workshop-01.json << 'EOF'
    {
      "hooks": {
        "sessionStart": [],
@@ -219,21 +246,24 @@ Hooks configuration file ready for customization, in a trusted folder so hooks w
 1. Create a logs directory:
 
    ```bash
+   umask 077
    mkdir -p logs
+   chmod 700 logs
    echo "logs/" >> .gitignore
    ```
 
-2. Update hooks.json with session hooks:
+2. Create a separate session hooks file:
 
    ```bash
-   cat > .github/hooks/hooks.json << 'EOF'
+   test ! -e .github/hooks/workshop-02.json &&
+   cat > .github/hooks/workshop-02.json << 'EOF'
    {
      "hooks": {
        "sessionStart": [
          {
            "type": "command",
-           "bash": "cat | jq -r '.timestamp' > /tmp/copilot-session-start; echo \"[$(date -Iseconds)] SESSION_START\" >> logs/copilot-audit.log",
-           "powershell": "$data = [Console]::In.ReadToEnd() | ConvertFrom-Json; $data.timestamp | Out-File /tmp/copilot-session-start; Add-Content -Path logs/copilot-audit.log -Value \"[$(Get-Date -Format o)] SESSION_START\"",
+           "bash": "umask 077; INPUT=$(cat); ID=$(printf '%s' \"$INPUT\" | jq -r '.sessionId | gsub(\"[^A-Za-z0-9_-]\"; \"_\")'); mkdir -p logs/session-times; printf '%s' \"$INPUT\" | jq -r '.timestamp' > \"logs/session-times/$ID\"; echo \"[$(date -Iseconds)] SESSION_START\" >> logs/copilot-audit.log",
+           "powershell": "$data = [Console]::In.ReadToEnd() | ConvertFrom-Json; $id = $data.sessionId -replace '[^A-Za-z0-9_-]', '_'; New-Item -ItemType Directory -Force logs/session-times | Out-Null; $data.timestamp | Out-File \"logs/session-times/$id\"; Add-Content logs/copilot-audit.log \"SESSION_START\"",
            "cwd": ".",
            "timeoutSec": 5
          }
@@ -241,8 +271,8 @@ Hooks configuration file ready for customization, in a trusted folder so hooks w
        "sessionEnd": [
          {
            "type": "command",
-           "bash": "END=$(cat | jq -r '.timestamp'); START=$(cat /tmp/copilot-session-start 2>/dev/null || echo $END); echo \"[$(date -Iseconds)] SESSION_END duration=$((END - START))ms\" >> logs/copilot-audit.log",
-           "powershell": "$data = [Console]::In.ReadToEnd() | ConvertFrom-Json; $start = Get-Content /tmp/copilot-session-start -ErrorAction SilentlyContinue; Add-Content -Path logs/copilot-audit.log -Value \"[$(Get-Date -Format o)] SESSION_END duration=$($data.timestamp - $start)ms\"",
+           "bash": "umask 077; INPUT=$(cat); ID=$(printf '%s' \"$INPUT\" | jq -r '.sessionId | gsub(\"[^A-Za-z0-9_-]\"; \"_\")'); END=$(printf '%s' \"$INPUT\" | jq -r '.timestamp'); START=$(cat \"logs/session-times/$ID\" 2>/dev/null || echo \"$END\"); echo \"[$(date -Iseconds)] SESSION_END duration=$((END - START))ms\" >> logs/copilot-audit.log",
+           "powershell": "$data = [Console]::In.ReadToEnd() | ConvertFrom-Json; $id = $data.sessionId -replace '[^A-Za-z0-9_-]', '_'; $start = Get-Content \"logs/session-times/$id\" -ErrorAction SilentlyContinue; Add-Content logs/copilot-audit.log \"SESSION_END duration=$($data.timestamp - $start)ms\"",
            "cwd": ".",
            "timeoutSec": 5
          }
@@ -282,7 +312,7 @@ Sessions are logged with timestamps and duration:
 > **How it works:**
 > - Hooks receive JSON data via stdin (standard input)
 > - Use `jq` to parse JSON fields (e.g., `cat | jq -r '.timestamp'`)
-> - The `sessionStart` hook saves the timestamp to a temp file
+> - The `sessionStart` hook saves a session-ID-keyed timestamp under restricted `logs/session-times/` (on Windows, use a private checkout with suitable ACLs)
 > - The `sessionEnd` hook reads back the start time and calculates duration in milliseconds
 
 ### Exercise 3: Prompt Auditing Hook
@@ -291,9 +321,10 @@ Sessions are logged with timestamps and duration:
 
 **Steps:**
 
-1. Add prompt logging to hooks.json:
+1. Add prompt logging in a separate file. Use synthetic prompts only; truncation is not secret redaction:
    ```bash
-   cat > .github/hooks/hooks.json << 'EOF'
+   test ! -e .github/hooks/workshop-03.json &&
+   cat > .github/hooks/workshop-03.json << 'EOF'
    {
      "hooks": {
        "sessionStart": [
@@ -336,7 +367,7 @@ Sessions are logged with timestamps and duration:
    List all files in the current directory
    ```
    ```
-   Show me the contents of hooks.json
+   Show me the contents of .github/hooks/workshop-03.json
    ```
    ```
    /exit
@@ -350,15 +381,13 @@ Sessions are logged with timestamps and duration:
 **Expected Outcome:**
 All prompts logged with timestamps:
 ```
-[2026-02-24T10:30:00+00:00] PROMPT: List all files in the current directory...
-[2026-02-24T10:30:01+00:00] SESSION_START
-[2026-02-24T10:30:05+00:00] SESSION_END
-[2026-02-24T10:30:10+00:00] PROMPT: Show me the contents of hooks.json...
-[2026-02-24T10:30:11+00:00] SESSION_START
+[2026-02-24T10:30:00+00:00] SESSION_START
+[2026-02-24T10:30:01+00:00] PROMPT: List all files in the current directory...
+[2026-02-24T10:30:10+00:00] PROMPT: Show me the contents of .github/hooks/workshop-03.json...
 [2026-02-24T10:30:15+00:00] SESSION_END
 ```
 
-> **Note:** The `userPromptSubmitted` hook fires when you submit a prompt, which triggers the session to start. So the order is: PROMPT → SESSION_START → SESSION_END.
+> **Note:** Output above is illustrative, not a lifecycle ordering assertion. Session hooks are not expected for every prompt; capture sanitized fresh/resumed payloads to verify exact ordering on your runtime.
 
 ### Exercise 4: Pre-Tool Permission Control
 
@@ -376,9 +405,9 @@ All prompts logged with timestamps:
    # Read input from stdin
    INPUT=$(cat)
 
-   # Parse tool information (toolArgs is a JSON string, so parse with fromjson)
-   TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName')
-   TOOL_ARGS=$(echo "$INPUT" | jq -r '.toolArgs | fromjson')
+   # Accept both string and object arguments defensively
+   TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName // .tool_name')
+   TOOL_ARGS=$(echo "$INPUT" | jq '.toolArgs // .tool_input | if type == "string" then fromjson else . end')
 
    # Log the tool request
    echo "[$(date -Iseconds)] TOOL_REQUEST: $TOOL_NAME" >> logs/copilot-audit.log
@@ -387,7 +416,7 @@ All prompts logged with timestamps:
    BLOCKED_COMMANDS=("rm -rf" "sudo" "chmod 777" "> /dev/sda" "mkfs")
 
    # Check if this is a shell command
-   if [ "$TOOL_NAME" = "shell" ] || [ "$TOOL_NAME" = "bash" ]; then
+   if [ "$TOOL_NAME" = "shell" ] || [ "$TOOL_NAME" = "bash" ] || [ "$TOOL_NAME" = "Bash" ]; then
      COMMAND=$(echo "$TOOL_ARGS" | jq -r '.command // empty')
 
      # Check against blocked patterns
@@ -421,9 +450,10 @@ All prompts logged with timestamps:
    chmod +x .github/hooks/scripts/check-tool.sh
    ```
 
-2. Update hooks.json to use the script:
+2. Add a dedicated configuration file for the script:
    ```bash
-   cat > .github/hooks/hooks.json << 'EOF'
+   test ! -e .github/hooks/workshop-04.json &&
+   cat > .github/hooks/workshop-04.json << 'EOF'
    {
      "hooks": {
        "sessionStart": [
@@ -484,7 +514,7 @@ The hook blocks the command:
 
 Copilot shows: "Denied by preToolUse hook: Command 'sudo' is not allowed by policy"
 
-> **Note:** Some dangerous commands like `rm -rf /` are blocked by Copilot's built-in safety before the hook runs.
+> **Note:** This substring guard is illustrative and bypassable (aliases, alternate programs, shell syntax, and unhandled tool names). Its argument parser expects objects or JSON-encoded strings, not raw patch text. Do not test destructive commands or treat this as enforcement of a filesystem boundary.
 
 ### Exercise 5: Post-Tool Verification
 
@@ -500,12 +530,12 @@ Copilot shows: "Denied by preToolUse hook: Command 'sudo' is not allowed by poli
    INPUT=$(cat)
 
    TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName')
-   RESULT_TYPE=$(echo "$INPUT" | jq -r '.toolResult.resultType')
+   RESULT_TYPE=$(echo "$INPUT" | jq -r 'if has("error") then "failure" else .toolResult.resultType end')
 
    echo "[$(date -Iseconds)] TOOL_COMPLETE: $TOOL_NAME result=$RESULT_TYPE" >> logs/copilot-audit.log
 
    # Alert on failures
-   if [ "$RESULT_TYPE" = "error" ]; then
+   if [ "$RESULT_TYPE" = "failure" ]; then
      echo "[$(date -Iseconds)] ALERT: Tool $TOOL_NAME failed!" >> logs/copilot-alerts.log
    fi
    EOF
@@ -513,9 +543,10 @@ Copilot shows: "Denied by preToolUse hook: Command 'sudo' is not allowed by poli
    chmod +x .github/hooks/scripts/log-tool-result.sh
    ```
 
-2. Add to hooks.json:
+2. Register the script for **success and failure** events in a separate file:
    ```bash
-   cat > .github/hooks/hooks.json << 'EOF'
+   test ! -e .github/hooks/workshop-05.json &&
+   cat > .github/hooks/workshop-05.json << 'EOF'
    {
      "hooks": {
        "sessionStart": [
@@ -537,6 +568,14 @@ Copilot shows: "Denied by preToolUse hook: Command 'sudo' is not allowed by poli
          }
        ],
        "postToolUse": [
+         {
+           "type": "command",
+           "bash": ".github/hooks/scripts/log-tool-result.sh",
+           "cwd": ".",
+           "timeoutSec": 5
+         }
+       ],
+       "postToolUseFailure": [
          {
            "type": "command",
            "bash": ".github/hooks/scripts/log-tool-result.sh",
@@ -574,11 +613,15 @@ All tool executions are logged with results:
 [2026-02-26T08:10:01+00:00] TOOL_COMPLETE: bash result=success
 ```
 
+For a safe failure check, ask the agent to read an explicitly nonexistent file in the disposable repository exactly once, without retrying. Expect `TOOL_COMPLETE: view result=failure` and `ALERT: Tool view failed!` in `logs/copilot-alerts.log`. This exercises `postToolUseFailure`, not `errorOccurred`.
+
 ### Exercise 6: Error Handling Hooks
 
 **Goal:** Capture and respond to internal Copilot errors.
 
-> **Note:** The `errorOccurred` hook fires for internal Copilot errors (network failures, API errors, etc.), not for tool failures. Tool failures are handled by the `postToolUseFailure` hook. The `postToolUse` hook fires only after successful tool calls.
+> **Note:** Internal errors include `errorContext` and `recoverable`; tool failures have their own `postToolUseFailure` event. `postToolUse` handles successful calls only.
+>
+> Inspecting configuration or replaying synthetic nested error JSON tests only the script/parser. Neither proves an actual `errorOccurred` event fired. Do not induce authentication, account, or remote-service failures just to trigger this exercise.
 
 **Steps:**
 
@@ -589,20 +632,23 @@ All tool executions are logged with results:
 
    INPUT=$(cat)
 
-   ERROR_TYPE=$(echo "$INPUT" | jq -r '.errorType // "unknown"')
-   ERROR_MESSAGE=$(echo "$INPUT" | jq -r '.errorMessage // .message // "No message"')
+   ERROR_TYPE=$(echo "$INPUT" | jq -r '.error.name // "unknown"')
+   ERROR_MESSAGE=$(echo "$INPUT" | jq -r '.error.message // "No message"')
+   ERROR_CONTEXT=$(echo "$INPUT" | jq -r '.errorContext // .error_context // "unknown"')
+   RECOVERABLE=$(echo "$INPUT" | jq -r '.recoverable')
    TIMESTAMP=$(date -Iseconds)
 
    # Log the error
-   echo "[$TIMESTAMP] ERROR: $ERROR_TYPE - $ERROR_MESSAGE" >> logs/copilot-errors.log
+   echo "[$TIMESTAMP] ERROR: $ERROR_TYPE context=$ERROR_CONTEXT recoverable=$RECOVERABLE - $ERROR_MESSAGE" >> logs/copilot-errors.log
    EOF
 
    chmod +x .github/hooks/scripts/handle-error.sh
    ```
 
-2. Update hooks.json to include the error hook:
+2. Create a separate error hook file:
    ```bash
-   cat > .github/hooks/hooks.json << 'EOF'
+   test ! -e .github/hooks/workshop-06.json &&
+   cat > .github/hooks/workshop-06.json << 'EOF'
    {
      "hooks": {
        "sessionStart": [
@@ -632,7 +678,7 @@ All tool executions are logged with results:
 
 3. Verify the hook is configured:
    ```bash
-   cat .github/hooks/hooks.json | jq '.hooks.errorOccurred'
+   jq '.hooks.errorOccurred' .github/hooks/workshop-06.json
    ```
 
 **Expected Outcome:**
@@ -649,7 +695,7 @@ All tool executions are logged with results:
 
 ### Exercise 7: Directory-Restricted Hooks
 
-**Goal:** Allow edits only in specific directories.
+**Goal:** Illustrate normalized-path checks for direct edit tools, not a security boundary.
 
 **Steps:**
 
@@ -659,7 +705,7 @@ All tool executions are logged with results:
    #!/bin/bash
 
    INPUT=$(cat)
-   TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName')
+   TOOL_NAME=$(echo "$INPUT" | jq -r '.toolName // .tool_name')
 
    # Only check write operations (tool name is 'create' for file creation)
    if [ "$TOOL_NAME" != "write" ] && [ "$TOOL_NAME" != "edit" ] && [ "$TOOL_NAME" != "create" ]; then
@@ -667,15 +713,22 @@ All tool executions are logged with results:
      exit 0
    fi
 
-   # toolArgs is a JSON string, so parse it with fromjson
-   FILE_PATH=$(echo "$INPUT" | jq -r '.toolArgs | fromjson | .path // .filePath // empty')
+   # Native camelCase exercise; string/object payloads both accepted
+   FILE_PATH=$(echo "$INPUT" | jq -r '.toolArgs // .tool_input | if type == "string" then fromjson else . end | .path // .filePath // empty')
+   CWD=$(echo "$INPUT" | jq -r '.cwd')
+   ROOT=$(realpath -m -- "$CWD")
+   case "$FILE_PATH" in
+     /*) TARGET=$(realpath -m -- "$FILE_PATH") ;;
+     *) TARGET=$(realpath -m -- "$ROOT/$FILE_PATH") ;;
+   esac
 
    # Allowed directories
-   ALLOWED_DIRS=("/docs/" "/src/" "/test/" "/tests/")
+   ALLOWED_DIRS=("docs" "src" "test" "tests")
 
    ALLOWED=false
    for DIR in "${ALLOWED_DIRS[@]}"; do
-     if [[ "$FILE_PATH" == *"$DIR"* ]]; then
+     # Resolve existing symlinks and traversal; require containment in cwd
+     if [[ "$TARGET" == "$ROOT/$DIR/"* ]]; then
        ALLOWED=true
        break
      fi
@@ -692,9 +745,10 @@ All tool executions are logged with results:
    chmod +x .github/hooks/scripts/restrict-paths.sh
    ```
 
-2. Update hooks.json to use the path restriction:
+2. Use a separate path-check configuration:
    ```bash
-   cat > .github/hooks/hooks.json << 'EOF'
+   test ! -e .github/hooks/workshop-07.json &&
+   cat > .github/hooks/workshop-07.json << 'EOF'
    {
      "hooks": {
        "sessionStart": [],
@@ -735,6 +789,10 @@ All tool executions are logged with results:
 - Root directory file creation is blocked: "Can only edit files in src/, test/, tests/, or docs/ directories"
 - Files in `docs/` are allowed
 
+These outcomes apply only to the recognized direct write tools and payload shape. `realpath` (GNU coreutils in this Linux exercise) normalizes traversal and existing symlinks, but races, symlink changes, other tools, and shell writes bypass this illustration. For enforcement use a suitable OS sandbox/filesystem policy.
+
+Tool availability depends on the selected model. Capture `preToolUse` to verify that this exercise actually uses `create`, `edit`, or `write`. An `apply_patch` call carries raw patch text and is not checked by this script; a model reporting that `create` is unavailable is not a successful guardrail test.
+
 ## Hooks Configuration Reference
 
 ### Hook Input Variables
@@ -750,7 +808,7 @@ All tool executions are logged with results:
 }
 ```
 
-> **Note:** In CLI sessions, `source` is always "new" (even when using `--resume`).
+> **Note:** Reference values are `startup`, `resume`, and `new`; inspect sanitized lifecycle payloads rather than assuming one value.
 
 #### userPromptSubmitted
 ```json
@@ -773,7 +831,7 @@ All tool executions are logged with results:
 }
 ```
 
-> **Note:** `toolArgs` is a JSON **string**, not an object. Parse it with `jq -r '.toolArgs | fromjson'`.
+> **Note:** `toolArgs` is typed as unknown. The example is a JSON-encoded string; `if type == "string" then fromjson else . end` accepts that shape and objects, but not raw non-JSON tool strings. Validate the tool name and argument format before parsing.
 
 > **Note:** Common tool names: `bash` (shell commands), `create` (file creation), `view` (directory listing), `report_intent` (internal).
 
@@ -802,7 +860,33 @@ All tool executions are logged with results:
 }
 ```
 
-> **Note:** `resultType` is `"success"` or `"error"`. `toolArgs` is a JSON string.
+> **Note:** `postToolUse` has `resultType: success`; failures use `postToolUseFailure` with an `error` string. Tool arguments may be strings or objects.
+
+#### postToolUseFailure
+```json
+{
+  "sessionId": "uuid-string",
+  "timestamp": 1771976925400,
+  "cwd": "/path/to/workspace",
+  "toolName": "view",
+  "toolArgs": {"path": "/path/to/workspace/nonexistent-example.txt"},
+  "error": "Path does not exist"
+}
+```
+
+#### errorOccurred
+```json
+{
+  "sessionId": "uuid-string",
+  "timestamp": 1771976925400,
+  "cwd": "/path/to/workspace",
+  "error": {"name": "ExampleError", "message": "Synthetic example"},
+  "errorContext": "system",
+  "recoverable": true
+}
+```
+
+This nested error schema is distinct from the string error in `postToolUseFailure`; the example alone is not evidence of event execution.
 
 #### userPromptTransformed
 ```json
@@ -862,18 +946,18 @@ All tool executions are logged with results:
 - ✅ Hooks must return JSON for permission decisions
 - ✅ `preCompact` hook fires before context compaction
 - ✅ `userPromptTransformed` fires after a prompt is turned into its model-facing form
-- ✅ `preMcpToolCall` fires before an MCP tool request is sent
+- ⚠️ `preMcpToolCall` is unverified, not an active configuration recommendation
 - ✅ `agentStop` fires when the agent stops at the end of a turn
 - ✅ `subagentStart` and `subagentStop` fire when a sub-agent is spawned and when it completes
-- ✅ `disableAllHooks` disables every hook; `disabledHooks` suppresses individual ones (policy hooks ignore both)
+- ✅ Repository settings `disableAllHooks` skips non-policy hooks across sources; a hook-file flag affects only that file. `disabledHooks` suppresses individual hooks (policy hooks ignore both)
 - ✅ Hook `ask` permission decision prompts user for confirmation
 - ✅ Cross-platform hook configs work across VS Code, Claude Code, and CLI
 - ✅ Hooks can also be declared inline under the `hooks` key in settings
-- ✅ `preToolUse` hooks respect `modifiedArgs`/`updatedInput`/`additionalContext`
-- ✅ `sessionStart`/`sessionEnd` hooks fire once per session, not per prompt
-- ✅ camelCase event keys yield camelCase payloads; PascalCase event keys yield `hook_event_name`/`session_id`/ISO 8601 payloads
-- ✅ Hook and plugin scripts receive `PLUGIN_ROOT`, `COPILOT_PLUGIN_DATA`, and `COPILOT_PROJECT_DIR` env vars
-- ✅ `notification` hook event fires on shell completion, permission prompts, elicitation, agent completion
+- ✅ Pre-tool `modifiedArgs` replaces arguments with an object; verify actual execution, not just the displayed call
+- ✅ Session hooks describe lifecycle boundaries, including resume/clear; validate exact ordering
+- ✅ Most payload fields follow event casing; native notifications mix camelCase session fields with `hook_event_name`/`notification_type`
+- ✅ Plugin-packaged hooks use plugin installation/data paths; do not assume ordinary repository hooks have plugin directories
+- ✅ `notification` covers background shell completion, permission prompts, elicitation, and background agent completion
 
 ## Next Steps
 
@@ -882,6 +966,6 @@ All tool executions are logged with results:
 ## References
 
 - [Hooks Reference - GitHub Docs](https://docs.github.com/en/copilot/reference/hooks-reference)
-- [About Hooks - GitHub Docs](https://docs.github.com/en/copilot/concepts/agents/hooks)
+- [About Hooks - GitHub Docs](https://docs.github.com/en/copilot/concepts/customizations/hooks)
 - [Using Hooks with Copilot CLI - GitHub Docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-hooks)
 - [Use Hooks - GitHub Docs](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/use-hooks)

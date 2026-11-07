@@ -77,12 +77,15 @@ Skills load only what's relevant → efficient context usage
 ## Progressive Disclosure
 
 ```
-Level 1: Discovery     → name + description (always read)
+Level 1: Discovery     → metadata or dynamic retrieval
 Level 2: Instructions  → SKILL.md body (when relevant)
 Level 3: Resources     → examples/, templates/ (as needed)
 ```
 
-Copilot **auto-selects** the right skill based on your request
+Copilot **may auto-select** a skill based on your request.
+Verify actual loading; use `/skill-name` explicitly when needed.
+
+`--dynamic-retrieval skills=on|off` controls embeddings retrieval and **persists** the choice. Inspect actual skill loading.
 
 ---
 
@@ -110,6 +113,10 @@ description: Generates API documentation from source code
 
 Optional frontmatter: `license`, `user-invocable`, `aliases`,
 `allowed-tools`, `disable-model-invocation`
+
+`allowed-tools` **preapproves** tools; it does not restrict the agent.
+Review skills and scripts before granting shell permission.
+Client-specific frontmatter support can differ across agents.
 
 ---
 
@@ -145,6 +152,8 @@ copilot skill list --json
 - `name` is lowercase/hyphenated and at most 64 characters; `description` is
   at most 1024 characters
 - Built-ins use `user-invocable: false`; the model loads them when needed
+- URL installs copy one `SKILL.md`; resource-dependent skills need their complete directory, scripts, references, and license
+- Verify actual reference reads and script execution, not just `SKILL.md` loading
 
 ```bash
 copilot skill add ./skills-directory
@@ -187,8 +196,8 @@ Open **Module 6** in `docs/workshop/06-skills.md`
 - **Exercise 1** — Create a project skill
 - **Exercise 2** — Skill with resource files
 - **Exercise 3** — Personal skills
-- **Exercise 4** — Discover and install community skills
-- **Exercise 5** — Skill with scripts
-- **Exercise 6** — Understanding skill auto-selection
+- **Exercise 4** — Copy complete community skill resources after review
+- **Exercise 5** — All four supplied scripts, explicit skill cwd, dry-run only; approve reviewed scripts (unapproved `-p` may deny shell)
+- **Exercise 6** — Observe auto-selection; verify loading and use `/skill-name` as a fallback
 
 ⏱️ You have **~16 minutes**
